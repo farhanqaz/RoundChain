@@ -71,6 +71,13 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
           value={`${formatUsdc(pot)} USDC`}
           sub={circle.status === "Active" ? `${activeCount} peserta aktif` : undefined}
         />
+        {circle.min_trust_score != null && circle.min_trust_score > 0 && (
+          <Stat
+            label="Min. trust score"
+            value={`${circle.min_trust_score} poin`}
+            sub="Reputasi on-chain untuk join"
+          />
+        )}
       </div>
 
       <MemberList members={members} contributionAmount={circle.contribution_amount} />

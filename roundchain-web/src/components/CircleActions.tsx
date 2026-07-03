@@ -44,6 +44,8 @@ interface Props {
   currentRound: number;
   payoutOrder: string[];
   nextPayoutTime: bigint;
+  minTrustScore?: number | null;
+  userTrustScore?: number | null;
   onSuccess: () => void;
 }
 
@@ -65,6 +67,8 @@ export function CircleActions(props: Props) {
     currentRound,
     payoutOrder,
     nextPayoutTime,
+    minTrustScore,
+    userTrustScore,
     onSuccess,
   } = props;
 
@@ -108,7 +112,19 @@ export function CircleActions(props: Props) {
   const usdcBalance = usdcInfo?.balance ?? null;
   const needsTrustline = usdcInfo?.needsTrustline ?? false;
   const needsFunds = !needsTrustline && usdcBalance !== null && usdcBalance < contributionAmount;
-  const canJoin = status === "Pending" && !isMember && !isFull && !needsTrustline && !needsFunds;
+  const trustRequired =
+    minTrustScore != null && minTrustScore > 0 ? minTrustScore : null;
+  const trustBlocked =
+    trustRequired != null &&
+    userTrustScore != null &&
+    userTrustScore < trustRequired;
+  const canJoin =
+    status === "Pending" &&
+    !isMember &&
+    !isFull &&
+    !needsTrustline &&
+    !needsFunds &&
+    !trustBlocked;
   const canContribute = status === "Active" && isMember && !isSlashed && !hasContributed && !needsTrustline && !needsFunds;
   const canClaimCollateral = isCompleted && isMember && !isSlashed && !collateralClaimed;
   const canClaimPayout = canRecipientClaimPayout(address, members, payoutOrder, currentRound, nextPayoutTime, status);
@@ -150,6 +166,24 @@ export function CircleActions(props: Props) {
 
         {status === "Pending" && !isMember && isFull && (
           <Alert variant="info">Kuota peserta sudah terpenuhi.</Alert>
+        )}
+
+        {status === "Pending" && !isMember && trustRequired != null && (
+          <Alert
+            variant={trustBlocked ? "warning" : "info"}
+            title={`Min. trust score: ${trustRequired}`}
+          >
+            {userTrustScore != null ? (
+              <>
+                Skor Anda: <strong>{userTrustScore}</strong> poin
+                {trustBlocked
+                  ? " — selesaikan arisan dulu untuk naik reputasi (+10 per arisan bersih)."
+                  : " — memenuhi syarat join."}
+              </>
+            ) : (
+              "Memuat trust score…"
+            )}
+          </Alert>
         )}
 
         {primaryAction === "join" && (

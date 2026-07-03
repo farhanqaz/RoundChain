@@ -39,6 +39,14 @@ export interface CircleState {
   status: CircleStatus;
   payout_order: string[];
   next_payout_time: bigint;
+  min_trust_score: number | null;
+}
+
+export interface TrustScore {
+  address: string;
+  circles_completed: number;
+  circles_defaulted: number;
+  score: number;
 }
 
 export interface MemberState {
@@ -129,6 +137,20 @@ function parseStatus(raw: unknown): CircleStatus {
   return "Pending";
 }
 
+function parseOptionalU32(raw: unknown): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) return null;
+    return Number(raw[0]);
+  }
+  if (typeof raw === "object" && raw !== null) {
+    if ("tag" in raw && (raw as { tag: string }).tag === "None") return null;
+    if ("Some" in raw) return Number((raw as { Some: unknown }).Some);
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function normalizeCircle(raw: Record<string, unknown>): CircleState {
   const payoutRaw = raw.payout_order;
   const payout_order = Array.isArray(payoutRaw)
@@ -147,6 +169,16 @@ export function normalizeCircle(raw: Record<string, unknown>): CircleState {
     status: parseStatus(raw.status),
     payout_order,
     next_payout_time: toBigInt(raw.next_payout_time),
+    min_trust_score: parseOptionalU32(raw.min_trust_score),
+  };
+}
+
+export function normalizeTrustScore(raw: Record<string, unknown>): TrustScore {
+  return {
+    address: toAddress(raw.address),
+    circles_completed: Number(raw.circles_completed ?? 0),
+    circles_defaulted: Number(raw.circles_defaulted ?? 0),
+    score: Number(raw.score ?? 0),
   };
 }
 
@@ -283,6 +315,11 @@ export async function simulateAndSend(
   return { hash: result.hash, returnValue };
 }
 
+export async function getTrustScore(address: string): Promise<TrustScore> {
+  const val = await simulateRead("get_trust_score", addressScVal(address));
+  return normalizeTrustScore(scValToNative(val) as Record<string, unknown>);
+}
+
 export async function getCircle(circleId: number): Promise<CircleState> {
   const val = await simulateRead(
     "get_circle",
@@ -379,12 +416,20 @@ export async function getMemberDetails(
   return details;
 }
 
+function optionalU32ScVal(value: number | null | undefined): xdr.ScVal {
+  if (value == null) {
+    return xdr.ScVal.scvVoid();
+  }
+  return nativeToScVal(value, { type: "u32" });
+}
+
 export function buildCreateCircleOp(params: {
   admin: string;
   token: string;
   contributionAmount: bigint;
   periodDuration: bigint;
   maxMembers: number;
+  minTrustScore?: number | null;
 }) {
   return contract().call(
     "create_circle",
@@ -392,7 +437,8 @@ export function buildCreateCircleOp(params: {
     addressScVal(params.token),
     nativeToScVal(params.contributionAmount, { type: "i128" }),
     nativeToScVal(params.periodDuration, { type: "u64" }),
-    nativeToScVal(params.maxMembers, { type: "u32" })
+    nativeToScVal(params.maxMembers, { type: "u32" }),
+    optionalU32ScVal(params.minTrustScore)
   );
 }
 

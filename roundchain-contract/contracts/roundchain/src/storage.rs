@@ -1,7 +1,7 @@
 use soroban_sdk::{Address, Env};
 
 use crate::error::RoundChainError;
-use crate::types::{CircleState, MemberState};
+use crate::types::{CircleState, MemberState, TrustScore};
 
 #[derive(Clone)]
 #[soroban_sdk::contracttype]
@@ -9,6 +9,7 @@ pub enum DataKey {
     NextCircleId,
     Circle(u32),
     Member(u32, Address),
+    TrustScore(Address),
 }
 
 pub fn read_next_circle_id(env: &Env) -> u32 {
@@ -59,4 +60,22 @@ pub fn member_exists(env: &Env, circle_id: u32, member: &Address) -> bool {
     env.storage()
         .persistent()
         .has(&DataKey::Member(circle_id, member.clone()))
+}
+
+pub fn read_trust_score(env: &Env, address: &Address) -> TrustScore {
+    env.storage()
+        .persistent()
+        .get(&DataKey::TrustScore(address.clone()))
+        .unwrap_or(TrustScore {
+            address: address.clone(),
+            circles_completed: 0,
+            circles_defaulted: 0,
+            score: 0,
+        })
+}
+
+pub fn write_trust_score(env: &Env, trust: &TrustScore) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::TrustScore(trust.address.clone()), trust);
 }

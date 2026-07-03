@@ -70,6 +70,7 @@ export default function DemoPage() {
         contributionAmount: minUsdc,
         periodDuration: BigInt(60),
         maxMembers: 2,
+        minTrustScore: null,
       });
       const { returnValue } = await simulateAndSend(address, signWithFreighter, op);
       let id = returnValue != null ? Number(returnValue) : NaN;

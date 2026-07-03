@@ -8,6 +8,8 @@ import {
   getCircle,
   getMember,
   getMemberDetails,
+  getTrustScore,
+  TrustScore,
 } from "@/lib/contract";
 
 export interface CircleView {
@@ -18,6 +20,7 @@ export interface CircleView {
   isSlashed: boolean;
   hasContributed: boolean;
   collateralClaimed: boolean;
+  trustScore: TrustScore | null;
 }
 
 export function useCircle(circleId: number, address: string | null, pollMs = 15_000) {
@@ -45,9 +48,15 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
         let hasContributed = false;
         let collateralClaimed = false;
         let isSlashed = false;
+        let trustScore: TrustScore | null = null;
 
         if (address) {
           isMember = circle.payout_order.includes(address);
+          try {
+            trustScore = await getTrustScore(address);
+          } catch {
+            trustScore = null;
+          }
           if (isMember) {
             const member = await getMember(circleId, address);
             hasContributed = member.contributions_paid > round;
@@ -64,6 +73,7 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
           isSlashed,
           hasContributed,
           collateralClaimed,
+          trustScore,
         });
         setError(null);
       } catch (e) {

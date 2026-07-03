@@ -9,10 +9,10 @@ use soroban_sdk::{
     contract, contractimpl, panic_with_error, token, Address, Env, Vec,
 };
 use storage::{
-    member_exists, read_circle, read_member, read_next_circle_id, write_circle, write_member,
-    write_next_circle_id,
+    member_exists, read_circle, read_member, read_next_circle_id, read_trust_score, write_circle,
+    write_member, write_next_circle_id, write_trust_score,
 };
-use types::{CircleState, CircleStatus, ContributionEntry, MemberState};
+use types::{compute_trust_score, CircleState, CircleStatus, ContributionEntry, MemberState, TrustScore};
 
 #[contract]
 pub struct RoundChainContract;
@@ -27,6 +27,7 @@ impl RoundChainContract {
         contribution_amount: i128,
         period_duration: u64,
         max_members: u32,
+        min_trust_score: Option<u32>,
     ) -> u32 {
         admin.require_auth();
 
@@ -55,6 +56,7 @@ impl RoundChainContract {
             status: CircleStatus::Pending,
             payout_order: Vec::new(&env),
             next_payout_time: 0,
+            min_trust_score,
         };
 
         write_circle(&env, circle_id, &circle);
@@ -77,6 +79,13 @@ impl RoundChainContract {
         }
         if member_exists(&env, circle_id, &member) {
             panic_with_error!(&env, RoundChainError::AlreadyMember);
+        }
+
+        if let Some(min_score) = circle.min_trust_score {
+            let trust = read_trust_score(&env, &member);
+            if trust.score < min_score {
+                panic_with_error!(&env, RoundChainError::InsufficientTrustScore);
+            }
         }
 
         let collateral = circle.contribution_amount;
@@ -207,6 +216,7 @@ impl RoundChainContract {
 
         if circle.current_round >= circle.total_rounds {
             circle.status = CircleStatus::Completed;
+            Self::apply_circle_trust_scores(&env, circle_id, &circle);
         } else {
             circle.next_payout_time = env.ledger().timestamp() + circle.period_duration;
         }
@@ -297,6 +307,11 @@ impl RoundChainContract {
         write_member(&env, circle_id, &member_state);
     }
 
+    /// View: on-chain trust score for an address.
+    pub fn get_trust_score(env: Env, address: Address) -> TrustScore {
+        read_trust_score(&env, &address)
+    }
+
     /// View: get circle state.
     pub fn get_circle(env: Env, circle_id: u32) -> CircleState {
         read_circle(&env, circle_id).unwrap_or_else(|_| {
@@ -338,6 +353,21 @@ impl RoundChainContract {
 }
 
 impl RoundChainContract {
+    fn apply_circle_trust_scores(env: &Env, circle_id: u32, circle: &CircleState) {
+        for addr in circle.payout_order.iter() {
+            if let Ok(member_state) = read_member(env, circle_id, &addr) {
+                let mut trust = read_trust_score(env, &addr);
+                if member_state.is_slashed {
+                    trust.circles_defaulted += 1;
+                } else {
+                    trust.circles_completed += 1;
+                }
+                trust.score = compute_trust_score(trust.circles_completed, trust.circles_defaulted);
+                write_trust_score(env, &trust);
+            }
+        }
+    }
+
     fn calculate_round_pot(env: &Env, circle_id: u32, circle: &CircleState) -> i128 {
         let mut pot: i128 = 0;
         for addr in circle.payout_order.iter() {

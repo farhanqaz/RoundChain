@@ -1,6 +1,6 @@
 # RoundChain
 
-Trustless arisan (ROSCA) on Stellar/Soroban — collateral on-chain, urutan giliran acak, denda otomatis.
+Trustless arisan (ROSCA) on Stellar/Soroban — collateral on-chain, urutan giliran acak, denda otomatis, **trust score on-chain**.
 
 **Hackathon**: APAC Stellar Hackathon — Rise In × Stellar Development Foundation  
 **Track**: Local Finance & Real World Access
@@ -9,8 +9,8 @@ Trustless arisan (ROSCA) on Stellar/Soroban — collateral on-chain, urutan gili
 
 | Resource | Value |
 |----------|-------|
-| Contract ID | `CAAI5USZ7ZA5RPO7FEUS7OV5HYE5TZKZBQKYRXY3ZKB7UB43B4TQYX2P` |
-| Explorer | [Stellar.Expert](https://stellar.expert/explorer/testnet/contract/CAAI5USZ7ZA5RPO7FEUS7OV5HYE5TZKZBQKYRXY3ZKB7UB43B4TQYX2P) |
+| Contract ID | `CCDF2YTXH5B7ULUDQIM4LU4H633LQEFW3R75HWK76YFWMGJV2J6YSA7Y` |
+| Explorer | [Stellar.Expert](https://stellar.expert/explorer/testnet/contract/CCDF2YTXH5B7ULUDQIM4LU4H633LQEFW3R75HWK76YFWMGJV2J6YSA7Y) |
 | USDC (Circle testnet SAC) | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 
 ## Structure
@@ -51,15 +51,25 @@ Open [http://localhost:3000](http://localhost:3000) with **Freighter on testnet*
 
 | Function | Who | Description |
 |----------|-----|-------------|
-| `create_circle` | Admin | Buat arisan baru |
-| `join_circle` | Member | Join + deposit collateral |
+| `create_circle` | Admin | Buat arisan baru (opsional `min_trust_score`) |
+| `join_circle` | Member | Join + deposit collateral (cek trust score) |
 | `start_circle` | Admin | Mulai (acak urutan giliran) |
 | `contribute` | Member | Bayar iuran ronde |
 | `trigger_payout` | Anyone | Cairkan pot ke penerima giliran |
 | `slash_defaulter` | Anyone | Potong collateral telat bayar |
 | `claim_collateral` | Member | Ambil jaminan setelah selesai |
 
-Views: `get_circle`, `get_member`, `get_contribution_status`, `get_next_circle_id`
+Views: `get_circle`, `get_member`, `get_contribution_status`, `get_next_circle_id`, `get_trust_score`
+
+## Trust score
+
+Setiap alamat punya reputasi on-chain:
+
+- **+10** per arisan selesai bersih (tanpa default/slash)
+- **−25** per arisan dengan default
+- Admin bisa set `min_trust_score` saat `create_circle` — `join_circle` reject jika score kurang
+
+Credit history primitive untuk unbanked: selesaikan 3 arisan → score 30 → bisa join pool lebih besar.
 
 ## Frontend Routes
 

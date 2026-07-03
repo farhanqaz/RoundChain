@@ -18,6 +18,7 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   17: "Minimal 2 peserta",
   18: "Durasi periode tidak valid",
   19: "Sudah terima uang arisan",
+  20: "Trust score terlalu rendah — selesaikan arisan dulu untuk naik reputasi",
 };
 
 const TOKEN_ERRORS: Record<number, string> = {

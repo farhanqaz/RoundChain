@@ -100,6 +100,8 @@ export default function CirclePage() {
               currentRound={circle.current_round}
               payoutOrder={circle.payout_order}
               nextPayoutTime={circle.next_payout_time}
+              minTrustScore={circle.min_trust_score}
+              userTrustScore={data.trustScore?.score ?? null}
               onSuccess={() => refresh(true)}
             />
           )}

@@ -13,7 +13,7 @@ cargo test
 ## API
 
 ### Admin
-- **create_circle**(admin, token, contribution_amount, period_duration, max_members) → circle_id
+- **create_circle**(admin, token, contribution_amount, period_duration, max_members, min_trust_score?) → circle_id
 - **start_circle**(circle_id)
 
 ### Members
@@ -26,7 +26,16 @@ cargo test
 - **slash_defaulter**(circle_id, member)
 
 ### Views
-- **get_circle**, **get_member**, **get_contribution_status**, **get_next_circle_id**
+- **get_circle**, **get_member**, **get_contribution_status**, **get_next_circle_id**, **get_trust_score**
+
+## Trust score
+
+| Event | Points |
+|-------|--------|
+| Arisan selesai bersih | +10 |
+| Default (slashed) | −25 |
+
+`min_trust_score` on `create_circle` gates `join_circle`. Score stored per address in contract storage.
 
 ## Testnet
 
@@ -46,7 +55,20 @@ stellar contract invoke --id <CONTRACT_ID> --source alice --network testnet -- c
   --token CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA \
   --contribution_amount 10000000 \
   --period_duration 604800 \
-  --max_members 5
+  --max_members 5 \
+  --min_trust_score null
+```
+
+Gated circle (min 20 trust = 2 arisan bersih):
+
+```bash
+stellar contract invoke --id <CONTRACT_ID> --source alice --network testnet -- create_circle \
+  --admin $(stellar keys address alice) \
+  --token CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA \
+  --contribution_amount 50000000 \
+  --period_duration 604800 \
+  --max_members 5 \
+  --min_trust_score 20
 ```
 
 At **start_circle**, payout order is shuffled on-chain (Soroban PRNG).

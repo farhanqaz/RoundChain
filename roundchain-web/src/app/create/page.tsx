@@ -30,6 +30,7 @@ export default function CreateCirclePage() {
   const [contribution, setContribution] = useState(String(DEFAULT_CONTRIBUTION / 10_000_000));
   const [periodDays, setPeriodDays] = useState(String(DEFAULT_PERIOD / 86400));
   const [maxMembers, setMaxMembers] = useState("5");
+  const [minTrustScore, setMinTrustScore] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -84,6 +85,9 @@ export default function CreateCirclePage() {
         contributionAmount,
         periodDuration,
         maxMembers: members,
+        minTrustScore: minTrustScore.trim()
+          ? parseInt(minTrustScore, 10)
+          : null,
       });
 
       const { hash, returnValue } = await simulateAndSend(address, signWithFreighter, op);
@@ -206,6 +210,21 @@ export default function CreateCirclePage() {
                 />
               </FormField>
 
+              <FormField
+                label="Min. trust score (opsional)"
+                hint="Peserta baru harus punya reputasi on-chain minimal ini. Kosongkan = terbuka untuk semua. +10 poin per arisan selesai bersih."
+              >
+                <input
+                  type="number"
+                  min={0}
+                  step={10}
+                  placeholder="0 — terbuka"
+                  value={minTrustScore}
+                  onChange={(e) => setMinTrustScore(e.target.value)}
+                  className="input"
+                />
+              </FormField>
+
               <button
                 onClick={handleCreate}
                 disabled={loading || !trustline}
@@ -230,6 +249,12 @@ export default function CreateCirclePage() {
                   <dt className="text-slate-500">Pot / ronde</dt>
                   <dd className="font-semibold text-violet-300">≈ {potEstimate} USDC</dd>
                 </div>
+                {minTrustScore.trim() && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-500">Min. trust</dt>
+                    <dd className="font-medium text-amber-300">{minTrustScore} poin</dd>
+                  </div>
+                )}
               </dl>
             </aside>
           </div>

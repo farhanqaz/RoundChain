@@ -71,6 +71,9 @@ export default function CirclesPage() {
                       Arisan #{id}
                     </p>
                     {open && <span className="pill-emerald">Terbuka</span>}
+                    {circle.min_trust_score != null && circle.min_trust_score > 0 && (
+                      <span className="pill-amber">Trust {circle.min_trust_score}+</span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-slate-400">
                     {formatUsdc(circle.contribution_amount)} USDC · {formatPeriod(circle.period_duration)}

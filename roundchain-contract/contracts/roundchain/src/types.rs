@@ -1,5 +1,8 @@
 use soroban_sdk::{contracttype, Address, Vec};
 
+pub const TRUST_POINTS_COMPLETED: u32 = 10;
+pub const TRUST_PENALTY_DEFAULTED: u32 = 25;
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CircleStatus {
@@ -22,6 +25,22 @@ pub struct CircleState {
     pub status: CircleStatus,
     pub payout_order: Vec<Address>,
     pub next_payout_time: u64,
+    pub min_trust_score: Option<u32>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TrustScore {
+    pub address: Address,
+    pub circles_completed: u32,
+    pub circles_defaulted: u32,
+    pub score: u32,
+}
+
+pub fn compute_trust_score(circles_completed: u32, circles_defaulted: u32) -> u32 {
+    let raw = (circles_completed as i64) * TRUST_POINTS_COMPLETED as i64
+        - (circles_defaulted as i64) * TRUST_PENALTY_DEFAULTED as i64;
+    raw.max(0) as u32
 }
 
 #[contracttype]

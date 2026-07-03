@@ -6,6 +6,7 @@ import { IconClose, IconMenu } from "@/components/icons";
 import { Logo } from "@/components/Logo";
 import { useWallet } from "@/providers/WalletProvider";
 import { shortenAddress } from "@/lib/contract";
+import { TrustScoreBadge } from "@/components/TrustScoreBadge";
 
 export function Header() {
   const { address, loading, error, connect, disconnect } = useWallet();
@@ -33,6 +34,7 @@ export function Header() {
             <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-800/60" />
           ) : address ? (
             <>
+              <TrustScoreBadge address={address} />
               <span className="hidden rounded-lg bg-slate-900/80 px-2.5 py-1.5 font-mono text-xs text-slate-400 ring-1 ring-slate-800 lg:inline">
                 {shortenAddress(address)}
               </span>

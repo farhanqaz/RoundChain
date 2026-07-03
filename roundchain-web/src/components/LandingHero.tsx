@@ -12,14 +12,14 @@ const FEATURES = [
     desc: "Collateral masuk kontrak saat join. Baru cair setelah arisan selesai — tidak ada celah untuk bendahara.",
   },
   {
+    icon: IconShield,
+    title: "Trust score on-chain",
+    desc: "Selesaikan arisan bersih → +10 reputasi. Admin bisa set minimum score untuk pool lebih besar — credit history tanpa bank.",
+  },
+  {
     icon: IconList,
     title: "Giliran transparan",
     desc: "Urutan terima uang tercatat permanen. Setiap peserta bisa verifikasi kapan giliran mereka.",
-  },
-  {
-    icon: IconShield,
-    title: "Enforcement otomatis",
-    desc: "Keterlambatan bayar iuran memicu pemotongan collateral tanpa perlu negosiasi manual.",
   },
 ];
 
@@ -45,8 +45,8 @@ export function LandingHero() {
             <span className="text-white">dengan aturan yang jelas</span>
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-slate-400">
-            RoundChain mengelola arisan digital dengan kontrak pintar: jaminan terkunci, giliran
-            terjadwal, dan sanksi otomatis — tanpa bergantung pada kepercayaan semata.
+            RoundChain mengelola arisan digital dengan kontrak pintar — plus reputasi finansial
+            on-chain untuk yang tidak punya credit score bank konvensional.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/create" className="btn-primary px-8 py-4 text-base">

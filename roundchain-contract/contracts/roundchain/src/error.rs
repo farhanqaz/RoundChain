@@ -23,4 +23,5 @@ pub enum RoundChainError {
     InvalidMaxMembers = 17,
     InvalidPeriod = 18,
     AlreadyReceivedPayout = 19,
+    InsufficientTrustScore = 20,
 }
