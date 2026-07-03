@@ -1,0 +1,31 @@
+# Dependencies & build
+node_modules/
+.next/
+out/
+build/
+target/
+
+# Env & secrets
+.env
+.env.local
+.env*.local
+
+# Stellar / Soroban local
+.soroban/
+.stellar/
+
+# OS & IDE
+.DS_Store
+*.pem
+.idea/
+.vscode/
+.cursor/
+
+# Logs & cache
+*.log
+npm-debug.log*
+.turbo/
+*.tsbuildinfo
+
+# Uploads / temp
+uploads/

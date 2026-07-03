@@ -1,0 +1,110 @@
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { CircleActions } from "@/components/CircleActions";
+import { CircleDashboard } from "@/components/CircleDashboard";
+import { CircleSkeleton } from "@/components/CircleSkeleton";
+import { ConnectWallet } from "@/components/ConnectWallet";
+import { ShareCircle } from "@/components/ShareCircle";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Alert } from "@/components/ui/Alert";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useWallet } from "@/providers/WalletProvider";
+import { useCircle } from "@/hooks/useCircle";
+
+export default function CirclePage() {
+  const params = useParams();
+  const circleId = parseInt(params.id as string, 10);
+  const { address } = useWallet();
+  const { data, error, loading, refreshing, refresh } = useCircle(circleId, address);
+
+  if (loading) return <CircleSkeleton />;
+
+  const circle = data?.circle;
+
+  if (!loading && !error && !circle) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
+        <h1 className="text-2xl font-bold text-white">Arisan tidak ditemukan</h1>
+        <p className="mt-2 text-slate-400">ID #{circleId} tidak valid atau belum ada.</p>
+        <Link href="/circles" className="btn-primary mt-8 px-8">
+          Kembali ke daftar
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {error && (
+        <Alert variant="error">
+          {error}{" "}
+          <Link href="/circles" className="underline">Daftar arisan</Link>
+        </Alert>
+      )}
+
+      {circle && data && (
+        <>
+          <PageHeader
+            backHref="/circles"
+            backLabel="Daftar arisan"
+            title={`Arisan #${circleId}`}
+            badge={<StatusBadge status={circle.status} />}
+            action={
+              data.isAdmin ? (
+                <Link href={`/circle/${circleId}/admin`} className="btn-secondary px-4 py-2 text-sm">
+                  Pengelola
+                </Link>
+              ) : undefined
+            }
+          />
+
+          {refreshing && (
+            <p className="-mt-4 text-xs text-slate-600">Memperbarui data…</p>
+          )}
+
+          {data.isAdmin && !data.isMember && circle.status === "Pending" && (
+            <Alert variant="warning" title="Pengelola harus join">
+              Anda belum terdaftar sebagai peserta.{" "}
+              <Link href={`/join/${circleId}`} className="underline">Join arisan</Link>{" "}
+              sebelum memulai — slot Anda dihitung dari {circle.max_members} peserta.
+            </Alert>
+          )}
+
+          <CircleDashboard circle={circle} members={data.members} circleId={circleId} />
+          <ShareCircle circleId={circleId} />
+
+          {!address && (
+            <ConnectWallet
+              title="Dompet diperlukan"
+              description="Hubungkan Freighter untuk bergabung atau melakukan transaksi."
+            />
+          )}
+
+          {address && (
+            <CircleActions
+              circleId={circleId}
+              address={address}
+              tokenId={circle.token}
+              status={circle.status}
+              isMember={data.isMember}
+              isSlashed={data.isSlashed}
+              hasContributed={data.hasContributed}
+              isCompleted={circle.status === "Completed"}
+              collateralClaimed={data.collateralClaimed}
+              contributionAmount={circle.contribution_amount}
+              memberCount={circle.member_count}
+              maxMembers={circle.max_members}
+              members={data.members}
+              currentRound={circle.current_round}
+              payoutOrder={circle.payout_order}
+              nextPayoutTime={circle.next_payout_time}
+              onSuccess={() => refresh(true)}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
