@@ -18,14 +18,14 @@ const FRIENDBOT = "https://friendbot.stellar.org";
 function parseTransferSimulationError(simulated: rpc.Api.SimulateTransactionResponse): string {
   const raw = JSON.stringify(simulated);
   if (raw.includes("trustline entry is missing") || raw.includes("TrustlineMissing")) {
-    return "Penerima belum punya trustline USDC";
+    return "Receiver has no USDC trustline";
   }
   if (
     raw.includes("insufficient balance") ||
     raw.includes("Underfunded") ||
     raw.includes("InsufficientBalance")
   ) {
-    return "Wallet faucet kosong — isi via Circle faucet ke akun faucet";
+    return "Faucet wallet empty — fund via Circle faucet";
   }
   const err =
     typeof simulated === "object" &&
@@ -35,7 +35,7 @@ function parseTransferSimulationError(simulated: rpc.Api.SimulateTransactionResp
       ? simulated.error
       : null;
   if (err) return err.slice(0, 180);
-  return "Simulasi transfer USDC gagal";
+  return "USDC transfer simulation failed";
 }
 
 export async function dripXlm(publicKey: string): Promise<{ ok: boolean; error?: string }> {
@@ -87,7 +87,7 @@ export async function dripUsdc(
 
     const result = await server.sendTransaction(assembled);
     if (result.status === "ERROR") {
-      return { ok: false, error: "Transfer USDC ditolak" };
+      return { ok: false, error: "USDC transfer rejected" };
     }
 
     if (result.status === "PENDING") {
@@ -97,12 +97,12 @@ export async function dripUsdc(
         getResult = await server.getTransaction(result.hash);
       }
       if (getResult.status !== "SUCCESS") {
-        return { ok: false, error: "Transfer USDC gagal on-chain" };
+        return { ok: false, error: "USDC transfer failed on-chain" };
       }
     }
 
     return { ok: true, hash: result.hash };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Drip USDC gagal" };
+    return { ok: false, error: e instanceof Error ? e.message : "USDC drip failed" };
   }
 }

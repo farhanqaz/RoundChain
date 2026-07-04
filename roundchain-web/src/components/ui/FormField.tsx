@@ -9,9 +9,9 @@ interface Props {
 export function FormField({ label, hint, children }: Props) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-slate-200">{label}</label>
+      <label className="block text-sm font-medium text-foreground">{label}</label>
       {children}
-      {hint && <p className="text-xs leading-relaxed text-slate-600">{hint}</p>}
+      {hint && <p className="text-xs leading-relaxed text-muted">{hint}</p>}
     </div>
   );
 }

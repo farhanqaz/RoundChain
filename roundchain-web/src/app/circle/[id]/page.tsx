@@ -26,10 +26,10 @@ export default function CirclePage() {
   if (!loading && !error && !circle) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
-        <h1 className="text-2xl font-bold text-white">Arisan tidak ditemukan</h1>
-        <p className="mt-2 text-slate-400">ID #{circleId} tidak valid atau belum ada.</p>
+        <h1 className="text-2xl font-medium text-foreground">Circle not found</h1>
+        <p className="mt-2 text-muted">ID #{circleId} is invalid or does not exist yet.</p>
         <Link href="/circles" className="btn-primary mt-8 px-8">
-          Kembali ke daftar
+          Back to list
         </Link>
       </div>
     );
@@ -40,7 +40,7 @@ export default function CirclePage() {
       {error && (
         <Alert variant="error">
           {error}{" "}
-          <Link href="/circles" className="underline">Daftar arisan</Link>
+          <Link href="/circles" className="underline">Browse circles</Link>
         </Alert>
       )}
 
@@ -48,27 +48,27 @@ export default function CirclePage() {
         <>
           <PageHeader
             backHref="/circles"
-            backLabel="Daftar arisan"
-            title={`Arisan #${circleId}`}
+            backLabel="Browse circles"
+            title={`Circle #${circleId}`}
             badge={<StatusBadge status={circle.status} />}
             action={
               data.isAdmin ? (
                 <Link href={`/circle/${circleId}/admin`} className="btn-secondary px-4 py-2 text-sm">
-                  Pengelola
+                  Admin
                 </Link>
               ) : undefined
             }
           />
 
           {refreshing && (
-            <p className="-mt-4 text-xs text-slate-600">Memperbarui data…</p>
+            <p className="-mt-4 text-xs text-muted">Refreshing…</p>
           )}
 
           {data.isAdmin && !data.isMember && circle.status === "Pending" && (
-            <Alert variant="warning" title="Pengelola harus join">
-              Anda belum terdaftar sebagai peserta.{" "}
-              <Link href={`/join/${circleId}`} className="underline">Join arisan</Link>{" "}
-              sebelum memulai — slot Anda dihitung dari {circle.max_members} peserta.
+            <Alert variant="warning" title="Admin must join">
+              You are not registered as a member yet.{" "}
+              <Link href={`/join/${circleId}`} className="underline">Join the circle</Link>{" "}
+              before starting — your slot counts toward {circle.max_members} members.
             </Alert>
           )}
 
@@ -77,8 +77,8 @@ export default function CirclePage() {
 
           {!address && (
             <ConnectWallet
-              title="Dompet diperlukan"
-              description="Hubungkan Freighter untuk bergabung atau melakukan transaksi."
+              title="Wallet required"
+              description="Connect Freighter to join or submit transactions."
             />
           )}
 

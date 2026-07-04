@@ -1,10 +1,10 @@
 type Variant = "info" | "success" | "warning" | "error";
 
 const variants: Record<Variant, string> = {
-  info: "border-slate-700/60 bg-slate-900/50 text-slate-300",
-  success: "border-emerald-700/40 bg-emerald-950/30 text-emerald-200",
-  warning: "border-amber-700/40 bg-amber-950/30 text-amber-200",
-  error: "border-red-800/50 bg-red-950/30 text-red-200",
+  info: "border-border bg-muted-surface text-muted",
+  success: "border-border bg-card text-muted",
+  warning: "border-foreground bg-card text-foreground",
+  error: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
 };
 
 export function Alert({
@@ -17,8 +17,8 @@ export function Alert({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`rounded-xl border p-4 text-sm ${variants[variant]}`}>
-      {title && <p className="mb-1 font-medium text-white">{title}</p>}
+    <div className={`rounded-md border p-4 text-sm transition-colors duration-300 ${variants[variant]}`}>
+      {title && <p className="mb-1 font-medium text-foreground">{title}</p>}
       {children}
     </div>
   );

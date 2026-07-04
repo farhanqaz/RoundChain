@@ -17,13 +17,13 @@ export default function CirclesPage() {
 
   useEffect(() => {
     if (!CONTRACT_ID) {
-      setError("Kontrak belum dikonfigurasi");
+      setError("Contract not configured");
       setLoading(false);
       return;
     }
     listCircles()
       .then(setCircles)
-      .catch((e) => setError(e instanceof Error ? e.message : "Gagal memuat"))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -32,26 +32,26 @@ export default function CirclesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        label="Arisan"
-        title="Daftar arisan"
-        description="Semua arisan yang terdaftar di jaringan. Pilih untuk melihat detail atau bergabung."
+        label="Circles"
+        title="Browse circles"
+        description="All circles registered on-chain. Open one to view details or join."
         action={
           <Link href="/create" className="btn-primary px-5 py-2.5 text-sm">
-            Buat baru
+            Create new
             <IconArrowRight />
           </Link>
         }
       />
 
-      {error && <div className="card border-red-800/40 p-5 text-red-300">{error}</div>}
+      {error && <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>}
 
       {!error && circles.length === 0 && (
         <EmptyState
           icon={<IconUsers className="h-7 w-7" />}
-          title="Belum ada arisan"
-          description="Buat arisan pertama dan undang peserta melalui link undangan."
-          action={{ label: "Buat arisan", href: "/create" }}
-          secondary={{ label: "Latihan di sandbox", href: "/demo" }}
+          title="No circles yet"
+          description="Create the first circle and invite members with a share link."
+          action={{ label: "Create circle", href: "/create" }}
+          secondary={{ label: "Try the sandbox", href: "/demo" }}
         />
       )}
 
@@ -67,22 +67,22 @@ export default function CirclesPage() {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-white group-hover:text-violet-200">
-                      Arisan #{id}
+                    <p className="font-medium text-foreground group-hover:underline">
+                      Circle #{id}
                     </p>
-                    {open && <span className="pill-emerald">Terbuka</span>}
+                    {open && <span className="pill-emerald">Open</span>}
                     {circle.min_trust_score != null && circle.min_trust_score > 0 && (
                       <span className="pill-amber">Trust {circle.min_trust_score}+</span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-muted">
                     {formatUsdc(circle.contribution_amount)} USDC · {formatPeriod(circle.period_duration)}
                   </p>
                   <div className="mt-3 flex items-center gap-3">
-                    <div className="h-1.5 max-w-[140px] flex-1 overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-violet-500/80" style={{ width: `${fillPct}%` }} />
+                    <div className="h-px max-w-[140px] flex-1 bg-border">
+                      <div className="h-px bg-foreground" style={{ width: `${fillPct}%` }} />
                     </div>
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-muted">
                       {circle.member_count}/{circle.max_members}
                     </span>
                   </div>

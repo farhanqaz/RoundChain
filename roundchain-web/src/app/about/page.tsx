@@ -13,9 +13,9 @@ import {
 import { server } from "@/lib/contract";
 
 const VALUES = [
-  { icon: IconLock, title: "Tanpa perantara", desc: "Dana tidak lewat bendahara manusia." },
-  { icon: IconList, title: "Aturan transparan", desc: "Semua aturan tercatat di blockchain." },
-  { icon: IconShield, title: "Denda otomatis", desc: "Sistem enforce, bukan drama grup WA." },
+  { icon: IconLock, title: "No middleman", desc: "Funds never pass through a human treasurer." },
+  { icon: IconList, title: "Transparent rules", desc: "Every rule is recorded on-chain." },
+  { icon: IconShield, title: "Auto enforcement", desc: "Late payments trigger slashing — no group chat drama." },
 ];
 
 export default function AboutPage() {
@@ -29,84 +29,83 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-12">
       <div>
-        <p className="section-label">Tentang</p>
-        <h1 className="mt-2 text-3xl font-bold text-white">RoundChain</h1>
-        <p className="mt-4 text-lg leading-relaxed text-slate-400">
-          Platform arisan digital yang menggantikan kepercayaan buta dengan kontrak pintar di
-          Stellar Soroban. Collateral terkunci, urutan giliran transparan, dan denda otomatis untuk
-          peserta yang telat bayar.
+        <p className="section-label">About</p>
+        <h1 className="mt-2 text-3xl font-medium text-foreground">RoundChain</h1>
+        <p className="mt-4 text-base leading-relaxed text-muted">
+          A digital ROSCA (rotating savings circle) that replaces blind trust with Stellar Soroban
+          smart contracts. Collateral is locked on-chain, payout order is transparent, and late
+          members are penalized automatically. Complete circles to build an on-chain trust score.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-3">
         {VALUES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="card p-4">
-            <Icon className="mb-2 h-5 w-5 text-violet-400" />
-            <p className="font-medium text-white">{title}</p>
-            <p className="mt-1 text-xs text-slate-500">{desc}</p>
+          <div key={title} className="bg-card p-4">
+            <Icon className="mb-2 h-5 w-5 text-muted" />
+            <p className="font-medium text-foreground">{title}</p>
+            <p className="mt-1 text-xs text-muted">{desc}</p>
           </div>
         ))}
       </div>
 
-      <div className="card p-6">
-        <p className="text-sm text-slate-500">Status jaringan</p>
+      <div className="border border-border bg-card p-6">
+        <p className="text-sm text-muted">Network status</p>
         <div className="mt-3 flex items-center gap-2">
           <span
-            className={`h-2 w-2 rounded-full ${rpcOk === true ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : rpcOk === false ? "bg-red-400" : "bg-slate-500"}`}
+            className={`h-1.5 w-1.5 rounded-full ${rpcOk === true ? "bg-foreground" : rpcOk === false ? "bg-muted" : "bg-border"}`}
           />
-          <span className="text-sm text-slate-300">
-            Soroban Testnet {rpcOk === true ? "online" : rpcOk === false ? "offline" : "memeriksa…"}
+          <span className="text-sm text-muted">
+            Soroban Testnet {rpcOk === true ? "online" : rpcOk === false ? "offline" : "checking…"}
           </span>
         </div>
       </div>
 
-      <div className="card p-6">
-        <h2 className="font-semibold text-white">Mulai dari sini</h2>
-        <ol className="mt-4 space-y-3 text-sm text-slate-400">
+      <div className="border border-border bg-card p-6">
+        <h2 className="font-medium text-foreground">Get started</h2>
+        <ol className="mt-4 space-y-3 text-sm text-muted">
           <li className="flex gap-3">
-            <span className="font-mono text-violet-400">1</span>
+            <span className="font-mono text-xs text-muted">1</span>
             <span>
-              <Link href="/demo" className="text-violet-300 hover:underline">
-                Coba demo
+              <Link href="/demo" className="text-foreground underline underline-offset-2">
+                Try the sandbox
               </Link>{" "}
-              atau{" "}
-              <Link href="/create" className="text-violet-300 hover:underline">
-                buat arisan
-              </Link>{" "}
-              dengan aturan sendiri
+              or{" "}
+              <Link href="/create" className="text-foreground underline underline-offset-2">
+                create a circle
+              </Link>
             </span>
           </li>
           <li className="flex gap-3">
-            <span className="font-mono text-violet-400">2</span>
-            <span>Undang peserta lewat link atau WhatsApp</span>
+            <span className="font-mono text-xs text-muted">2</span>
+            <span>Invite members via link or WhatsApp</span>
           </li>
           <li className="flex gap-3">
-            <span className="font-mono text-violet-400">3</span>
-            <span>Mulai arisan → bayar iuran → yang giliran terima uang sendiri</span>
+            <span className="font-mono text-xs text-muted">3</span>
+            <span>Start → pay each round → recipient claims payout</span>
           </li>
         </ol>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="border border-border bg-card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowDev(!showDev)}
-          className="flex w-full items-center justify-between px-6 py-4 text-left text-sm text-slate-400 hover:bg-slate-900/40"
+          className="flex w-full items-center justify-between px-6 py-4 text-left text-sm text-muted hover:bg-muted-surface"
         >
-          <span>Informasi teknis (developer)</span>
-          <span className="text-slate-600">{showDev ? "−" : "+"}</span>
+          <span>Technical details</span>
+          <span className="text-muted">{showDev ? "−" : "+"}</span>
         </button>
         {showDev && (
-          <div className="space-y-4 border-t border-slate-800 px-6 py-5">
+          <div className="space-y-4 border-t border-border px-6 py-5">
             {[
               { label: "RoundChain contract", value: CONTRACT_ID },
               { label: "USDC (Circle testnet)", value: USDC_TOKEN },
               { label: "Soroban RPC", value: SOROBAN_RPC },
             ].map((item) => (
               <div key={item.label}>
-                <p className="text-xs text-slate-600">{item.label}</p>
+                <p className="text-xs text-muted">{item.label}</p>
                 <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <code className="flex-1 truncate rounded-lg bg-slate-950 px-3 py-2 font-mono text-xs text-slate-400">
+                  <code className="flex-1 truncate rounded-md border border-border bg-muted-surface px-3 py-2 font-mono text-xs text-muted">
                     {item.value || "—"}
                   </code>
                   {item.value && (

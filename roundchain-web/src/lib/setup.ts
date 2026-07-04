@@ -44,5 +44,5 @@ export function whatsAppShare(text: string): string {
 }
 
 export function joinInviteMessage(circleId: number, origin: string): string {
-  return `Yuk join arisan RoundChain #${circleId} 🎉\nTinggal buka link, connect dompet, terus Join:\n${origin}/join/${circleId}`;
+  return `Join my RoundChain circle #${circleId} 🎉\nOpen the link, connect your wallet, and tap Join:\n${origin}/join/${circleId}`;
 }

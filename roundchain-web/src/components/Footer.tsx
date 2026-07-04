@@ -2,46 +2,45 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-slate-800/80 bg-slate-950/40">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-start sm:justify-between">
+    <footer className="mt-auto border-t border-border transition-colors duration-300">
+      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-12 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-sm space-y-2">
-          <p className="font-medium text-white">RoundChain</p>
-          <p className="text-sm leading-relaxed text-slate-500">
-            Arisan digital dengan jaminan kontrak pintar di Stellar. Aman, transparan, tanpa
-            perantara yang bisa lari.
+          <p className="font-medium text-foreground">RoundChain</p>
+          <p className="text-sm leading-relaxed text-muted">
+            On-chain savings circles on Stellar. Locked collateral, transparent rules, trust scores.
           </p>
         </div>
-        <div className="flex gap-12 text-sm">
+        <div className="flex gap-16 text-sm">
           <div className="space-y-2">
-            <p className="font-medium text-slate-300">Produk</p>
-            <Link href="/demo" className="block text-slate-500 hover:text-white">
-              Coba demo
+            <p className="text-muted">Product</p>
+            <Link href="/demo" className="block text-muted transition hover:text-foreground">
+              Sandbox
             </Link>
-            <Link href="/create" className="block text-slate-500 hover:text-white">
-              Buat arisan
+            <Link href="/create" className="block text-muted transition hover:text-foreground">
+              Create
             </Link>
-            <Link href="/circles" className="block text-slate-500 hover:text-white">
-              Daftar arisan
+            <Link href="/circles" className="block text-muted transition hover:text-foreground">
+              Circles
             </Link>
           </div>
           <div className="space-y-2">
-            <p className="font-medium text-slate-300">Info</p>
-            <Link href="/about" className="block text-slate-500 hover:text-white">
-              Tentang
+            <p className="text-muted">Info</p>
+            <Link href="/about" className="block text-muted transition hover:text-foreground">
+              About
             </Link>
             <a
               href="https://stellar.org"
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-slate-500 hover:text-white"
+              className="block text-muted transition hover:text-foreground"
             >
-              Stellar Network
+              Stellar
             </a>
           </div>
         </div>
       </div>
-      <div className="border-t border-slate-800/60 py-4 text-center text-xs text-slate-600">
-        Stellar Testnet · Soroban Smart Contract · © {new Date().getFullYear()} RoundChain
+      <div className="border-t border-border py-4 text-center text-xs text-muted">
+        Stellar Testnet · © {new Date().getFullYear()} RoundChain
       </div>
     </footer>
   );

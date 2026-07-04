@@ -58,10 +58,10 @@ export function AdminPanel({
 
   if (!isAdmin) {
     return (
-      <Alert variant="warning" title="Hanya pengelola arisan">
-        Hubungkan dompet yang dipakai saat membuat arisan.{" "}
-        <Link href={`/circle/${circleId}`} className="text-violet-400 underline">
-          Kembali
+      <Alert variant="warning" title="Admin only">
+        Connect the wallet used to create this circle.{" "}
+        <Link href={`/circle/${circleId}`} className="underline underline-offset-2">
+          Back
         </Link>
       </Alert>
     );
@@ -76,7 +76,7 @@ export function AdminPanel({
       setTxHash(hash);
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Transaksi gagal");
+      setError(e instanceof Error ? e.message : "Transaction failed");
     } finally {
       setLoading(null);
     }
@@ -94,32 +94,32 @@ export function AdminPanel({
     <div className="space-y-8">
       <PageHeader
         backHref={`/circle/${circleId}`}
-        backLabel="Arisan"
-        label="Pengelola"
-        title={`Arisan #${circleId}`}
+        backLabel="Circle"
+        label="Admin"
+        title={`Circle #${circleId}`}
         badge={<StatusBadge status={status} />}
       />
 
       {status === "Pending" && !adminInCircle && (
-        <Alert variant="warning" title="Anda juga harus join">
-          Pengelola tidak otomatis jadi peserta.{" "}
+        <Alert variant="warning" title="You must join too">
+          The admin is not automatically a member.{" "}
           <Link href={`/join/${circleId}`} className="underline">
-            Join arisan ini
+            Join this circle
           </Link>{" "}
-          dulu — Anda dihitung sebagai 1 dari {maxMembers} peserta.
+          first — you count as 1 of {maxMembers} members.
         </Alert>
       )}
 
       {status === "Active" && (
         <div className="card flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-slate-500">Ronde {currentRound + 1}</p>
-            <p className="font-medium text-white">{timeRemaining(nextPayoutTime)}</p>
+            <p className="text-xs text-muted">Round {currentRound + 1}</p>
+            <p className="font-medium text-foreground">{timeRemaining(nextPayoutTime)}</p>
           </div>
           {recipient && (
-            <p className="text-sm text-slate-400">
-              Penerima giliran:{" "}
-              <span className="font-mono text-violet-300">{shortenAddress(recipient, 6)}</span>
+            <p className="text-sm text-muted">
+              Scheduled recipient:{" "}
+              <span className="font-mono text-foreground">{shortenAddress(recipient, 6)}</span>
             </p>
           )}
         </div>
@@ -129,30 +129,30 @@ export function AdminPanel({
 
       <div className="action-panel">
         <div className="action-panel-header">
-          <p className="font-medium text-white">Tindakan pengelola</p>
-          <p className="text-xs text-slate-500">Mulai arisan dan enforce keterlambatan</p>
+          <p className="font-medium text-foreground">Admin actions</p>
+          <p className="text-xs text-muted">Start the circle and enforce late payments</p>
         </div>
         <div className="action-panel-body space-y-4">
         {status === "Pending" && (
           <>
             <Step
               done={memberCount >= maxMembers}
-              label={`Peserta lengkap (${memberCount}/${maxMembers})`}
-              hint="Bagikan link join — semua peserta termasuk Anda harus join"
+              label={`All members joined (${memberCount}/${maxMembers})`}
+              hint="Share the join link — every member including you must join"
             />
             <button
               disabled={!!loading || !canStart}
               onClick={() => run("Start", () => buildStartCircleOp(circleId))}
               className="btn-primary w-full"
             >
-              {loading === "Start" ? "Memulai…" : "Mulai arisan"}
+              {loading === "Start" ? "Starting…" : "Start circle"}
             </button>
             {!canStart && (
-              <p className="text-xs text-slate-500">Tunggu semua slot terisi dulu.</p>
+              <p className="text-xs text-muted">Wait until all slots are filled.</p>
             )}
             {canStart && (
-              <p className="text-xs text-slate-500">
-                Urutan giliran terima uang akan diacak on-chain saat Anda mulai arisan.
+              <p className="text-xs text-muted">
+                Payout order will be shuffled on-chain when you start.
               </p>
             )}
           </>
@@ -162,19 +162,19 @@ export function AdminPanel({
           <>
             <Step
               done={periodEnded && !recipientDefaulted && defaulters.length === 0}
-              label="Peserta giliran claim sendiri"
+              label="Recipient claims payout"
               hint={
                 periodEnded
                   ? recipient
-                    ? `${shortenAddress(recipient, 6)} terima uang di halaman arisan`
-                    : "Penerima giliran klik terima uang sendiri"
+                    ? `${shortenAddress(recipient, 6)} claims on the circle page`
+                    : "The scheduled recipient claims payout on the circle page"
                   : timeRemaining(nextPayoutTime)
               }
             />
 
             {defaulters.length > 0 && periodEnded && (
-              <div className="space-y-2 border-t border-slate-800 pt-4">
-                <p className="text-xs font-medium text-red-300">Potong collateral yang telat bayar</p>
+              <div className="space-y-2 border-t border-border pt-4">
+                <p className="text-xs font-medium text-foreground">Slash late members</p>
                 {defaulters.map((d) => (
                   <button
                     key={d.address}
@@ -182,7 +182,7 @@ export function AdminPanel({
                     onClick={() => run("Slash", () => buildSlashDefaulterOp(circleId, d.address))}
                     className="btn-danger w-full text-sm"
                   >
-                    Potong {shortenAddress(d.address)}
+                    Slash {shortenAddress(d.address)}
                   </button>
                 ))}
               </div>
@@ -190,26 +190,26 @@ export function AdminPanel({
 
             {recipientDefaulted && periodEnded && (
               <Alert variant="error">
-                Penerima giliran belum bayar — potong collateral dulu, lalu giliran berikutnya bisa claim.
+                The scheduled recipient has not paid — slash their collateral first, then the next round can proceed.
               </Alert>
             )}
 
             {periodEnded && defaulters.length === 0 && !recipientDefaulted && recipient && (
               <Alert variant="info">
-                Giliran terima uang: <span className="font-mono">{shortenAddress(recipient, 6)}</span> — mereka
-                claim sendiri di halaman arisan, bukan dari sini.
+                Payout turn: <span className="font-mono">{shortenAddress(recipient, 6)}</span> — they
+                claim on the circle page, not from here.
               </Alert>
             )}
             {!periodEnded && (
-              <p className="text-xs text-slate-500">
-                Setelah waktu ronde habis, peserta yang giliran klik &quot;Terima uang arisan&quot; sendiri.
+              <p className="text-xs text-muted">
+                After the round period ends, the scheduled recipient clicks &quot;Claim payout&quot; on the circle page.
               </p>
             )}
           </>
         )}
 
         {status === "Completed" && (
-          <Alert variant="success">Arisan selesai. Peserta bisa ambil collateral di halaman arisan.</Alert>
+          <Alert variant="success">Circle complete. Members can reclaim collateral on the circle page.</Alert>
         )}
 
         {error && <Alert variant="error">{error}</Alert>}
@@ -225,14 +225,14 @@ function Step({ done, label, hint }: { done: boolean; label: string; hint: strin
     <div className="flex gap-3">
       <span
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
-          done ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-500"
+          done ? "bg-foreground text-background" : "border border-border text-muted"
         }`}
       >
         {done ? "✓" : "·"}
       </span>
       <div>
-        <p className={`text-sm ${done ? "text-slate-400 line-through" : "text-white"}`}>{label}</p>
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p className={`text-sm ${done ? "text-muted line-through" : "text-foreground"}`}>{label}</p>
+        <p className="text-xs text-muted">{hint}</p>
       </div>
     </div>
   );

@@ -17,8 +17,8 @@ export default function CircleAdminPage() {
   if (!address) {
     return (
       <ConnectWallet
-        title="Akses pengelola"
-        description="Hubungkan dompet yang digunakan saat membuat arisan ini."
+        title="Admin access"
+        description="Connect the wallet used when creating this circle."
       />
     );
   }

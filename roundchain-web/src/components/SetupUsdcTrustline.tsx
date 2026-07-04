@@ -28,7 +28,7 @@ export function SetupUsdcTrustline({ address, issuer, onSuccess }: Props) {
       setDone(true);
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal — coba lagi di Freighter");
+      setError(e instanceof Error ? e.message : "Failed — try again in Freighter");
     } finally {
       setLoading(false);
     }
@@ -36,10 +36,10 @@ export function SetupUsdcTrustline({ address, issuer, onSuccess }: Props) {
 
   if (done) {
     return (
-      <p className="text-sm text-emerald-300">
-        Berhasil! Lanjut isi saldo USDC di{" "}
-        <a href={CIRCLE_FAUCET_LINK} target="_blank" rel="noopener noreferrer" className="underline">
-          faucet Circle
+      <p className="text-sm text-muted">
+        Done. Fund USDC from the{" "}
+        <a href={CIRCLE_FAUCET_LINK} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+          Circle faucet
         </a>
         .
       </p>
@@ -52,11 +52,11 @@ export function SetupUsdcTrustline({ address, issuer, onSuccess }: Props) {
         type="button"
         onClick={handleSetup}
         disabled={loading}
-        className="btn-secondary w-full border-amber-700/30 bg-amber-950/30 text-amber-100 hover:border-amber-600/40 hover:bg-amber-950/50"
+        className="btn-secondary w-full"
       >
-        {loading ? "Tunggu Freighter…" : "Aktifkan USDC (1 klik)"}
+        {loading ? "Waiting for Freighter…" : "Enable USDC"}
       </button>
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }

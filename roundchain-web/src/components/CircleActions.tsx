@@ -103,7 +103,7 @@ export function CircleActions(props: Props) {
       refreshBalance();
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Transaksi gagal");
+      setError(e instanceof Error ? e.message : "Transaction failed");
     } finally {
       setLoading(null);
     }
@@ -140,17 +140,17 @@ export function CircleActions(props: Props) {
     <div className="action-panel">
       <div className="action-panel-header flex items-center justify-between">
         <div>
-          <p className="font-medium text-white">Tindakan Anda</p>
-          <p className="text-xs text-slate-500">Konfirmasi setiap transaksi di Freighter</p>
+          <p className="font-medium text-foreground">Your actions</p>
+          <p className="text-xs text-muted">Approve each transaction in Freighter</p>
         </div>
         {usdcBalance !== null && !needsTrustline && (
-          <span className="pill-violet">{formatUsdc(usdcBalance)} USDC</span>
+          <span className="text-xs text-muted">{formatUsdc(usdcBalance)} USDC</span>
         )}
       </div>
 
       <div className="action-panel-body">
         {isSlashed && (
-          <Alert variant="error">Collateral dipotong karena keterlambatan iuran.</Alert>
+          <Alert variant="error">Your collateral was slashed for missing a contribution.</Alert>
         )}
 
         {needsTrustline && (
@@ -160,12 +160,12 @@ export function CircleActions(props: Props) {
         {needsFunds && (
           <FundWalletPanel
             address={address}
-            minLabel={`Butuh ${formatUsdc(contributionAmount)} USDC`}
+            minLabel={`Need ${formatUsdc(contributionAmount)} USDC`}
           />
         )}
 
         {status === "Pending" && !isMember && isFull && (
-          <Alert variant="info">Kuota peserta sudah terpenuhi.</Alert>
+          <Alert variant="info">This circle is full.</Alert>
         )}
 
         {status === "Pending" && !isMember && trustRequired != null && (
@@ -175,13 +175,13 @@ export function CircleActions(props: Props) {
           >
             {userTrustScore != null ? (
               <>
-                Skor Anda: <strong>{userTrustScore}</strong> poin
+                Your score: <strong>{userTrustScore}</strong> pts
                 {trustBlocked
-                  ? " — selesaikan arisan dulu untuk naik reputasi (+10 per arisan bersih)."
-                  : " — memenuhi syarat join."}
+                  ? " — complete circles to build reputation (+10 per clean completion)."
+                  : " — you meet the requirement."}
               </>
             ) : (
-              "Memuat trust score…"
+              "Loading trust score…"
             )}
           </Alert>
         )}
@@ -190,11 +190,11 @@ export function CircleActions(props: Props) {
           <button
             disabled={!!loading || !canJoin}
             onClick={() => run("Join", () => buildJoinCircleOp(circleId, address))}
-            className="btn-primary w-full py-3.5"
+            className="btn-primary w-full py-3"
           >
             {loading === "Join"
-              ? "Memproses…"
-              : `Gabung · jaminan ${formatUsdc(contributionAmount)} USDC`}
+              ? "Processing…"
+              : `Join · ${formatUsdc(contributionAmount)} USDC collateral`}
           </button>
         )}
 
@@ -202,31 +202,33 @@ export function CircleActions(props: Props) {
           <button
             disabled={!!loading || !canContribute}
             onClick={() => run("Contribute", () => buildContributeOp(circleId, address))}
-            className="btn-success w-full py-3.5"
+            className="btn-primary w-full py-3"
           >
-            {loading === "Contribute"
-              ? "Memproses…"
-              : `Bayar iuran ${formatUsdc(contributionAmount)} USDC`}
+            {loading === "Pay"
+              ? "Processing…"
+              : `Pay ${formatUsdc(contributionAmount)} USDC`}
           </button>
         )}
 
         {primaryAction === "claim" && (
-          <div className="rounded-xl border border-emerald-800/30 bg-emerald-950/20 p-4">
-            <p className="font-medium text-emerald-200">Giliran penerima Anda</p>
-            <p className="mt-1 text-sm text-slate-400">
-              {periodEnded ? "Siap dicairkan ke dompet Anda" : timeRemaining(nextPayoutTime)}
-            </p>
+          <div className="space-y-4 border border-border p-4">
+            <div>
+              <p className="font-medium text-foreground">Your payout turn</p>
+              <p className="mt-1 text-sm text-muted">
+                {periodEnded ? "Ready to claim to your wallet" : timeRemaining(nextPayoutTime)}
+              </p>
+            </div>
             {!everyonePaid && periodEnded && (
-              <p className="mt-2 text-sm text-amber-300">Menunggu iuran semua peserta.</p>
+              <p className="text-sm text-muted">Waiting for all members to contribute.</p>
             )}
             <button
               disabled={!!loading}
               onClick={() => run("Payout", () => buildTriggerPayoutOp(circleId))}
-              className="btn-success mt-4 w-full py-3.5"
+              className="btn-primary w-full py-3"
             >
               {loading === "Payout"
-                ? "Memproses…"
-                : `Terima ${formatUsdc(roundPot)} USDC`}
+                ? "Processing…"
+                : `Claim ${formatUsdc(roundPot)} USDC`}
             </button>
           </div>
         )}
@@ -235,28 +237,28 @@ export function CircleActions(props: Props) {
           <button
             disabled={!!loading}
             onClick={() => run("Claim", () => buildClaimCollateralOp(circleId, address))}
-            className="btn-primary w-full py-3.5"
+            className="btn-primary w-full py-3"
           >
-            {loading === "Claim" ? "Memproses…" : "Ambil jaminan kembali"}
+            {loading === "Claim" ? "Processing…" : "Reclaim collateral"}
           </button>
         )}
 
         {status === "Active" && isMember && hasContributed && !isMyTurn && recipient && (
-          <div className="rounded-xl bg-slate-950/50 px-4 py-3 text-sm text-slate-400">
-            Iuran ronde lunas. Giliran:{" "}
-            <span className="font-mono text-slate-300">{shortenAddress(recipient, 6)}</span>
+          <p className="text-sm text-muted">
+            Round paid. Next payout:{" "}
+            <span className="font-mono text-foreground">{shortenAddress(recipient, 6)}</span>
             {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
-          </div>
+          </p>
         )}
 
         {status === "Pending" && isMember && (
-          <p className="text-sm text-slate-400">
-            Terdaftar — menunggu {maxMembers - memberCount} peserta lagi.
+          <p className="text-sm text-muted">
+            Joined — waiting for {maxMembers - memberCount} more member{maxMembers - memberCount !== 1 ? "s" : ""}.
           </p>
         )}
 
         {!primaryAction && status === "Active" && isMember && hasContributed && isMyTurn && !canClaimPayout && (
-          <p className="text-sm text-emerald-400/80">Iuran lunas · menunggu jadwal pencairan</p>
+          <p className="text-sm text-muted">Round paid · waiting for payout window</p>
         )}
 
         {error && <Alert variant="error">{error}</Alert>}

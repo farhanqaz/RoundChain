@@ -25,7 +25,7 @@ import {
 import { USDC_ISSUER, USDC_SAC } from "@/lib/usdc-assets";
 import { CopyButton } from "@/components/CopyButton";
 
-const STEPS = ["Dompet", "USDC", "Saldo", "Arisan"];
+const STEPS = ["Wallet", "USDC", "Balance", "Circle"];
 
 export default function DemoPage() {
   const router = useRouter();
@@ -77,7 +77,7 @@ export default function DemoPage() {
       if (isNaN(id)) id = (await getNextCircleId()) - 1;
       setCircleId(id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal membuat arisan latihan");
+      setError(e instanceof Error ? e.message : "Failed to create practice circle");
     } finally {
       setCreating(false);
     }
@@ -89,13 +89,13 @@ export default function DemoPage() {
     <div className="mx-auto max-w-xl space-y-8">
       <PageHeader
         backHref="/"
-        backLabel="Beranda"
+        backLabel="Home"
         label="Sandbox"
-        title="Latihan arisan"
-        description="Environment latihan dengan preset singkat: 2 peserta, 1 menit per ronde, 0,1 USDC. Untuk arisan produksi, gunakan Buat Arisan."
+        title="Practice circle"
+        description="Quick preset: 2 members, 60-second rounds, 0.1 USDC. For a real circle, use Create Circle."
         action={
           <Link href="/create" className="btn-ghost text-sm">
-            Buat arisan →
+            Create circle →
           </Link>
         }
       />
@@ -104,9 +104,9 @@ export default function DemoPage() {
         {STEPS.map((name, i) => (
           <div key={name} className="flex-1">
             <div
-              className={`h-1 rounded-full transition ${i <= stepIndex ? "bg-violet-500" : "bg-slate-800"}`}
+              className={`h-px transition ${i <= stepIndex ? "bg-foreground" : "bg-border"}`}
             />
-            <p className={`mt-1.5 text-center text-[10px] uppercase tracking-wide ${i <= stepIndex ? "text-violet-400" : "text-slate-600"}`}>
+            <p className={`mt-2 text-center text-[10px] uppercase tracking-wide ${i <= stepIndex ? "text-foreground" : "text-muted"}`}>
               {name}
             </p>
           </div>
@@ -114,43 +114,43 @@ export default function DemoPage() {
       </div>
 
       <div className="action-panel">
-        <StepRow done={!!address} active={stepIndex === 0} title="Hubungkan dompet">
+        <StepRow done={!!address} active={stepIndex === 0} title="Connect wallet">
           {!address ? (
             <button type="button" onClick={connect} className="btn-primary w-full">
-              Hubungkan Freighter
+              Connect Freighter
             </button>
           ) : (
-            <p className="text-sm text-emerald-400">
-              Terhubung{xlmDone && " · biaya transaksi disiapkan"}
+            <p className="text-sm text-muted">
+              Connected{xlmDone && " · testnet XLM funded"}
             </p>
           )}
         </StepRow>
 
-        <StepRow done={trustline} active={stepIndex === 1} title="Aktifkan USDC">
+        <StepRow done={trustline} active={stepIndex === 1} title="Enable USDC">
           {address && !trustline && (
             <SetupUsdcTrustline address={address} issuer={USDC_ISSUER} onSuccess={refresh} />
           )}
-          {trustline && <p className="text-sm text-emerald-400">USDC aktif</p>}
+          {trustline && <p className="text-sm text-muted">USDC enabled</p>}
         </StepRow>
 
-        <StepRow done={usdcOk} active={stepIndex === 2} title="Isi saldo">
-          <p className="text-sm text-slate-400">
-            Ambil USDC testnet dari Circle Faucet (network: Stellar Testnet).
+        <StepRow done={usdcOk} active={stepIndex === 2} title="Fund balance">
+          <p className="text-sm text-muted">
+            Get testnet USDC from the Circle faucet (Stellar Testnet network).
           </p>
           {address && (
             <div className="mt-3 space-y-2">
-              <code className="block truncate rounded-xl bg-slate-950 px-3 py-2.5 font-mono text-xs text-slate-400">
+              <code className="block truncate rounded-md border border-border bg-muted-surface px-3 py-2.5 font-mono text-xs text-muted">
                 {address}
               </code>
               <div className="flex gap-2">
-                <CopyButton text={address} label="Salin" />
+                <CopyButton text={address} label="Copy" />
                 <a href={CIRCLE_FAUCET_LINK} target="_blank" rel="noopener noreferrer" className="btn-secondary flex-1 py-2 text-center text-xs">
-                  Buka faucet
+                  Open faucet
                 </a>
               </div>
               {trustline && (
-                <p className="text-xs text-slate-500">
-                  Saldo: {formatUsdc(usdcBalance)} USDC
+                <p className="text-xs text-muted">
+                  Balance: {formatUsdc(usdcBalance)} USDC
                   {!usdcOk && ` · min. ${formatUsdc(minUsdc)}`}
                 </p>
               )}
@@ -158,16 +158,16 @@ export default function DemoPage() {
           )}
         </StepRow>
 
-        <StepRow done={!!circleId} active={stepIndex === 3} title="Buat arisan latihan" last>
+        <StepRow done={!!circleId} active={stepIndex === 3} title="Create practice circle" last>
           {!circleId ? (
             <>
-              <p className="text-sm text-slate-400">Preset: 2 peserta · 60 detik · 0,1 USDC</p>
+              <p className="text-sm text-muted">Preset: 2 members · 60 seconds · 0.1 USDC</p>
               <button
                 onClick={handleCreate}
                 disabled={creating || stepIndex !== 3}
                 className="btn-primary mt-3 w-full"
               >
-                {creating ? "Memproses…" : "Buat arisan latihan"}
+                {creating ? "Processing…" : "Create practice circle"}
               </button>
             </>
           ) : (
@@ -195,21 +195,21 @@ function SuccessPanel({
 
   return (
     <div className="space-y-4">
-      <Alert variant="success" title={`Arisan #${circleId} siap`}>
-        Join sebagai peserta, undang 1 orang lagi, lalu mulai dari panel pengelola.
+      <Alert variant="success" title={`Circle #${circleId} is ready`}>
+        Join as a member, invite one more person, then start from the admin panel.
       </Alert>
       <div className="flex gap-2">
-        <CopyButton text={joinUrl} label="Salin undangan" />
+        <CopyButton text={joinUrl} label="Copy invite" />
         <a href={waLink} target="_blank" rel="noopener noreferrer" className="btn-success flex-1 py-2 text-center text-xs">
           WhatsApp
         </a>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <Link href={`/join/${circleId}`} className="btn-primary text-center text-sm">
-          Join sekarang
+          Join now
         </Link>
         <button type="button" onClick={() => router.push(`/circle/${circleId}/admin`)} className="btn-secondary text-sm">
-          Panel pengelola
+          Admin panel
         </button>
       </div>
     </div>
@@ -230,16 +230,16 @@ function StepRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`px-5 py-5 ${!last ? "border-b border-slate-800/60" : ""} ${active ? "bg-violet-950/20" : ""}`}>
+    <div className={`px-5 py-5 ${!last ? "border-b border-border" : ""} ${active ? "bg-muted-surface" : ""}`}>
       <div className="mb-3 flex items-center gap-3">
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${
-            done ? "bg-emerald-600/90 text-white" : active ? "bg-violet-600 text-white" : "bg-slate-800 text-slate-500"
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs ${
+            done ? "bg-foreground text-background" : active ? "border border-foreground text-foreground" : "border border-border text-muted"
           }`}
         >
           {done ? "✓" : "·"}
         </span>
-        <p className={`text-sm font-medium ${done ? "text-slate-500" : "text-white"}`}>{title}</p>
+        <p className={`text-sm font-medium ${done ? "text-muted" : "text-foreground"}`}>{title}</p>
       </div>
       {!done && <div className="pl-10">{children}</div>}
     </div>

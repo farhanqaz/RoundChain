@@ -28,7 +28,7 @@ Open [http://localhost:3000](http://localhost:3000) with **Freighter on testnet*
 | `/` | Landing |
 | `/demo` | Sandbox wizard |
 | `/circles` | Browse all circles |
-| `/create` | Create new arisan |
+| `/create` | Create a new circle |
 | `/circle/[id]` | Dashboard, contribute, claim payout |
 | `/circle/[id]/admin` | Start circle, slash defaulters |
 

@@ -26,14 +26,14 @@ export default function JoinCirclePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        label="Undangan"
-        title={circle ? `Arisan #${circleId}` : `Arisan #${circleId}`}
-        description="Setor jaminan sekali saat join, lalu bayar iuran setiap ronde hingga giliran penerima Anda."
+        label="Invite"
+        title={`Circle #${circleId}`}
+        description="Deposit collateral once when you join, then pay each round until your payout turn."
         badge={circle ? <StatusBadge status={circle.status} /> : undefined}
       />
 
       {circle?.status === "Pending" && seatsLeft > 0 && (
-        <p className="-mt-4 pill-amber w-fit">{seatsLeft} slot tersisa</p>
+        <p className="-mt-4 pill-amber w-fit">{seatsLeft} seat{seatsLeft !== 1 ? "s" : ""} left</p>
       )}
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -42,28 +42,28 @@ export default function JoinCirclePage() {
         <>
           {circle.status !== "Pending" && (
             <Alert variant="info">
-              Arisan sudah berjalan atau selesai.{" "}
-              <Link href={`/circle/${circleId}`} className="underline">Buka halaman arisan</Link>
+              This circle is already running or finished.{" "}
+              <Link href={`/circle/${circleId}`} className="underline">Open circle page</Link>
             </Alert>
           )}
 
           {circle.status === "Pending" && seatsLeft === 0 && (
-            <Alert variant="info">Semua slot peserta sudah terisi.</Alert>
+            <Alert variant="info">All member slots are filled.</Alert>
           )}
 
           <CircleDashboard circle={circle} members={data.members} circleId={circleId} />
 
           {!address && (
             <ConnectWallet
-              title="Hubungkan dompet"
-              description="Diperlukan untuk join dan setor jaminan arisan."
+              title="Connect wallet"
+              description="Required to join and deposit circle collateral."
             />
           )}
 
           {address && data.isMember && (
             <Alert variant="success">
-              Anda sudah terdaftar.{" "}
-              <Link href={`/circle/${circleId}`} className="underline">Ke halaman arisan</Link>
+              You are already a member.{" "}
+              <Link href={`/circle/${circleId}`} className="underline">Go to circle</Link>
             </Alert>
           )}
 

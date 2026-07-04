@@ -6,9 +6,9 @@ export function computeTrustScore(completed: number, defaulted: number): number 
 }
 
 export function trustTier(score: number): { label: string; className: string } {
-  if (score >= 30) return { label: "Terpercaya", className: "pill-emerald" };
-  if (score >= 10) return { label: "Berkembang", className: "pill-violet" };
-  return { label: "Pemula", className: "pill-amber" };
+  if (score >= 30) return { label: "Trusted", className: "pill-emerald" };
+  if (score >= 10) return { label: "Building", className: "pill-violet" };
+  return { label: "New", className: "pill-amber" };
 }
 
 export function circlesToReachScore(target: number): number {

@@ -1,17 +1,28 @@
-import Link from "next/link";
+"use client";
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+import Link from "next/link";
+import { LogoMark } from "@/components/LogoMark";
+
+interface Props {
+  compact?: boolean;
+  large?: boolean;
+}
+
+export function Logo({ compact = false, large = false }: Props) {
+  const markSize = large ? 72 : compact ? 40 : 52;
+
   return (
-    <Link href="/" className="group flex items-center gap-2.5">
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-900/40 ring-1 ring-white/10">
-        <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none">
-          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 2.5" />
-          <circle cx="12" cy="12" r="2.5" fill="currentColor" />
-        </svg>
-      </span>
+    <Link
+      href="/"
+      className="group flex items-center gap-3 transition-opacity hover:opacity-80"
+    >
+      <LogoMark
+        size={markSize}
+        className="transition-transform duration-500 group-hover:scale-105"
+      />
       {!compact && (
-        <span className="text-lg font-semibold tracking-tight text-white">
-          Round<span className="text-violet-400">Chain</span>
+        <span className={`font-medium tracking-tight text-foreground ${large ? "text-2xl" : "text-lg"}`}>
+          RoundChain
         </span>
       )}
     </Link>

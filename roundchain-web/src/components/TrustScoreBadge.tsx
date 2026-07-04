@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { getTrustScore, TrustScore } from "@/lib/contract";
-import { trustTier } from "@/lib/trust";
 
 interface Props {
   address: string;
@@ -20,15 +19,13 @@ export function TrustScoreBadge({ address, compact }: Props) {
 
   if (!trust) {
     return (
-      <span className="hidden h-7 w-16 animate-pulse rounded-lg bg-slate-800/60 lg:inline-block" />
+      <span className="hidden h-5 w-12 animate-shimmer rounded lg:inline-block" />
     );
   }
 
-  const tier = trustTier(trust.score);
-
   if (compact) {
     return (
-      <span className={`hidden lg:inline-flex ${tier.className}`} title="Trust score on-chain">
+      <span className="hidden text-xs text-muted lg:inline" title="On-chain trust score">
         {trust.score} pts
       </span>
     );
@@ -36,8 +33,8 @@ export function TrustScoreBadge({ address, compact }: Props) {
 
   return (
     <span
-      className={`hidden lg:inline-flex ${tier.className}`}
-      title={`${trust.circles_completed} arisan selesai · ${trust.circles_defaulted} default`}
+      className="hidden text-xs text-muted lg:inline"
+      title={`${trust.circles_completed} completed · ${trust.circles_defaulted} defaulted`}
     >
       {trust.score} trust
     </span>

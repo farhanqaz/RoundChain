@@ -64,9 +64,9 @@ export default function CreateCirclePage() {
     const periodDuration = BigInt(parseInt(periodDays, 10) * 86400);
     const members = parseInt(maxMembers, 10);
 
-    if (contributionAmount <= BigInt(0)) return setError("Iuran harus lebih dari 0");
-    if (members < 2) return setError("Minimal 2 peserta");
-    if (periodDuration < BigInt(86400)) return setError("Periode minimal 1 hari");
+    if (contributionAmount <= BigInt(0)) return setError("Contribution must be greater than 0");
+    if (members < 2) return setError("At least 2 members required");
+    if (periodDuration < BigInt(86400)) return setError("Period must be at least 1 day");
 
     setLoading(true);
     setError(null);
@@ -74,9 +74,9 @@ export default function CreateCirclePage() {
 
     try {
       const balance = await getUsdcBalanceInfo(address, USDC_TOKEN);
-      if (balance.needsTrustline) return setError("Aktifkan trustline USDC dulu");
+      if (balance.needsTrustline) return setError("Enable USDC trustline first");
       if (balance.balance < contributionAmount) {
-        return setError(`Saldo tidak cukup — minimal ${formatUsdc(contributionAmount)} USDC`);
+        return setError(`Insufficient balance — need at least ${formatUsdc(contributionAmount)} USDC`);
       }
 
       const op = buildCreateCircleOp({
@@ -96,7 +96,7 @@ export default function CreateCirclePage() {
       if (isNaN(id)) id = (await getNextCircleId()) - 1;
       setCreatedId(id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal membuat arisan");
+      setError(e instanceof Error ? e.message : "Failed to create circle");
     } finally {
       setLoading(false);
     }
@@ -106,21 +106,21 @@ export default function CreateCirclePage() {
     return (
       <div className="mx-auto max-w-xl space-y-6">
         <PageHeader
-          label="Berhasil"
-          title={`Arisan #${createdId}`}
-          description="Arisan siap. Join sebagai peserta lalu undang anggota."
+          label="Success"
+          title={`Circle #${createdId}`}
+          description="Your circle is live. Join as a member, then invite others."
         />
         <ShareCircle circleId={createdId} />
         <div className="grid gap-3 sm:grid-cols-2">
           <Link href={`/join/${createdId}`} className="btn-primary text-center">
-            Join sebagai peserta
+            Join as member
           </Link>
           <button
             type="button"
             onClick={() => router.push(`/circle/${createdId}/admin`)}
             className="btn-secondary"
           >
-            Panel pengelola
+            Admin panel
           </button>
         </div>
         {txHash && <TxResult hash={txHash} />}
@@ -132,16 +132,16 @@ export default function CreateCirclePage() {
     <div className="mx-auto max-w-xl space-y-8">
       <PageHeader
         backHref="/circles"
-        backLabel="Daftar arisan"
-        label="Pengelola"
-        title="Buat arisan baru"
-        description="Atur jumlah peserta, iuran, dan periode ronde."
+        backLabel="Browse circles"
+        label="Admin"
+        title="Create a circle"
+        description="Set member count, contribution amount, and round period."
       />
 
       {!address && (
         <ConnectWallet
-          title="Dompet diperlukan"
-          description="Hubungkan Freighter untuk membuat arisan."
+          title="Wallet required"
+          description="Connect Freighter to create a circle."
         />
       )}
 
@@ -150,8 +150,8 @@ export default function CreateCirclePage() {
           {!trustline && (
             <div className="action-panel">
               <div className="action-panel-header">
-                <p className="font-medium text-white">Trustline USDC</p>
-                <p className="text-sm text-slate-400">Sekali saja — approve di Freighter.</p>
+                <p className="font-medium text-foreground">USDC trustline</p>
+                <p className="text-sm text-muted">One-time setup — approve in Freighter.</p>
               </div>
               <div className="action-panel-body">
                 <SetupUsdcTrustline address={address} onSuccess={refreshWallet} />
@@ -162,15 +162,15 @@ export default function CreateCirclePage() {
           {trustline && !usdcOk && (
             <div className="action-panel">
               <div className="action-panel-header">
-                <p className="font-medium text-white">Isi saldo USDC</p>
+                <p className="font-medium text-foreground">Fund USDC balance</p>
               </div>
               <div className="action-panel-body">
                 <FundWalletPanel
                   address={address}
-                  minLabel={`Minimal ${formatUsdc(contributionAmount > BigInt(0) ? contributionAmount : BigInt(1_000_000))} USDC`}
+                  minLabel={`Minimum ${formatUsdc(contributionAmount > BigInt(0) ? contributionAmount : BigInt(1_000_000))} USDC`}
                 />
                 <div className="flex gap-2 pt-2">
-                  <CopyButton text={address} label="Salin alamat" />
+                  <CopyButton text={address} label="Copy address" />
                 </div>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function CreateCirclePage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr,280px]">
             <div className="card space-y-6 p-6">
-              <FormField label="Jumlah peserta" hint="Termasuk Anda sebagai pengelola">
+              <FormField label="Members" hint="Including you as admin">
                 <input
                   type="number"
                   min={2}
@@ -189,7 +189,7 @@ export default function CreateCirclePage() {
                 />
               </FormField>
 
-              <FormField label="Iuran per ronde (USDC)">
+              <FormField label="Contribution per round (USDC)">
                 <input
                   type="number"
                   min={0.1}
@@ -200,7 +200,7 @@ export default function CreateCirclePage() {
                 />
               </FormField>
 
-              <FormField label="Periode ronde (hari)" hint="Interval antar pembayaran iuran">
+              <FormField label="Round period (days)" hint="Time between contribution deadlines">
                 <input
                   type="number"
                   min={1}
@@ -211,14 +211,14 @@ export default function CreateCirclePage() {
               </FormField>
 
               <FormField
-                label="Min. trust score (opsional)"
-                hint="Peserta baru harus punya reputasi on-chain minimal ini. Kosongkan = terbuka untuk semua. +10 poin per arisan selesai bersih."
+                label="Min. trust score (optional)"
+                hint="New members need this on-chain reputation to join. Leave empty for open access. +10 per clean completion."
               >
                 <input
                   type="number"
                   min={0}
                   step={10}
-                  placeholder="0 — terbuka"
+                  placeholder="0 — open to all"
                   value={minTrustScore}
                   onChange={(e) => setMinTrustScore(e.target.value)}
                   className="input"
@@ -230,29 +230,29 @@ export default function CreateCirclePage() {
                 disabled={loading || !trustline}
                 className="btn-primary w-full"
               >
-                {loading ? "Memproses…" : "Buat arisan"}
+                {loading ? "Processing…" : "Create circle"}
               </button>
             </div>
 
             <aside className="card h-fit p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Ringkasan</p>
+              <p className="section-label">Summary</p>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">Token</dt>
-                  <dd className="text-right font-medium text-white">USDC testnet</dd>
+                  <dt className="text-muted">Token</dt>
+                  <dd className="text-right font-medium text-foreground">USDC testnet</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">Peserta</dt>
-                  <dd className="font-medium text-white">{maxMembers}</dd>
+                  <dt className="text-muted">Members</dt>
+                  <dd className="font-medium text-foreground">{maxMembers}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-slate-500">Pot / ronde</dt>
-                  <dd className="font-semibold text-violet-300">≈ {potEstimate} USDC</dd>
+                  <dt className="text-muted">Pot / round</dt>
+                  <dd className="font-medium text-foreground">≈ {potEstimate} USDC</dd>
                 </div>
                 {minTrustScore.trim() && (
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Min. trust</dt>
-                    <dd className="font-medium text-amber-300">{minTrustScore} poin</dd>
+                    <dt className="text-muted">Min. trust</dt>
+                    <dd className="font-medium text-foreground">{minTrustScore} pts</dd>
                   </div>
                 )}
               </dl>

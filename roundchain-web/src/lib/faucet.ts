@@ -15,7 +15,7 @@ export async function requestFaucet(address: string): Promise<{
   if (!res.ok) {
     return {
       ok: false,
-      error: data.error ?? "Faucet gagal",
+      error: data.error ?? "Faucet request failed",
       retryAfterSec: data.retryAfterSec,
     };
   }
@@ -23,8 +23,8 @@ export async function requestFaucet(address: string): Promise<{
 }
 
 export function formatRetryAfter(seconds: number): string {
-  if (seconds <= 0) return "sekarang";
-  if (seconds < 60) return `${seconds} detik`;
+  if (seconds <= 0) return "now";
+  if (seconds < 60) return `${seconds}s`;
   const mins = Math.ceil(seconds / 60);
-  return `${mins} menit`;
+  return `${mins} min`;
 }

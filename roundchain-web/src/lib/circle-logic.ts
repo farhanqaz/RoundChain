@@ -16,15 +16,15 @@ export function formatPeriod(seconds: bigint): string {
 export function timeRemaining(nextPayoutTime: bigint): string {
   const now = BigInt(Math.floor(Date.now() / 1000));
   const diff = nextPayoutTime - now;
-  if (diff <= BigInt(0)) return "Siap terima uang";
+  if (diff <= BigInt(0)) return "Ready to claim";
   const total = Number(diff);
-  if (total < 60) return `${total} detik lagi`;
-  if (total < 3600) return `${Math.ceil(total / 60)} menit lagi`;
+  if (total < 60) return `${total}s remaining`;
+  if (total < 3600) return `${Math.ceil(total / 60)}m remaining`;
   const hours = Math.floor(total / 3600);
   const mins = Math.floor((total % 3600) / 60);
-  if (hours < 24) return mins > 0 ? `${hours} jam ${mins} menit lagi` : `${hours} jam lagi`;
+  if (hours < 24) return mins > 0 ? `${hours}h ${mins}m remaining` : `${hours}h remaining`;
   const days = Math.floor(hours / 24);
-  return `${days} hari ${hours % 24} jam lagi`;
+  return `${days}d ${hours % 24}h remaining`;
 }
 
 export function isPeriodEnded(nextPayoutTime: bigint): boolean {

@@ -13,7 +13,7 @@ interface Props {
 
 export function PageHeader({
   backHref,
-  backLabel = "Kembali",
+  backLabel = "Back",
   label,
   title,
   description,
@@ -21,11 +21,11 @@ export function PageHeader({
   action,
 }: Props) {
   return (
-    <header className="space-y-4 border-b border-slate-800/60 pb-6">
+    <header className="space-y-4 border-b border-border pb-8">
       {backHref && (
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1 text-sm text-slate-500 transition hover:text-white"
+          className="inline-flex items-center gap-1 text-sm text-muted transition hover:text-foreground"
         >
           ← {backLabel}
         </Link>
@@ -33,12 +33,12 @@ export function PageHeader({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           {label && <p className="section-label">{label}</p>}
-          <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-medium tracking-tight text-foreground sm:text-3xl">{title}</h1>
             {badge}
           </div>
           {description && (
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
               {description}
             </p>
           )}

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const faucetSecret = process.env.FAUCET_SECRET_KEY;
   if (!faucetSecret) {
     return NextResponse.json(
-      { error: "Faucet belum dikonfigurasi (FAUCET_SECRET_KEY)" },
+      { error: "Faucet not configured (FAUCET_SECRET_KEY)" },
       { status: 503 }
     );
   }
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const address = body.address?.trim();
   if (!address || !address.startsWith("G")) {
-    return NextResponse.json({ error: "Alamat Stellar (G...) diperlukan" }, { status: 400 });
+    return NextResponse.json({ error: "Stellar address (G...) required" }, { status: 400 });
   }
 
   const key = address.toLowerCase();
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (elapsed < COOLDOWN_MS) {
     return NextResponse.json(
       {
-        error: "Rate limit — coba lagi nanti",
+        error: "Rate limit — try again later",
         retryAfterSec: Math.ceil((COOLDOWN_MS - elapsed) / 1000),
       },
       { status: 429 }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const receiverTrustline = await hasUsdcTrustline(address);
   if (!receiverTrustline) {
-    usdc = { ok: false, error: "Trustline USDC belum aktif" };
+    usdc = { ok: false, error: "USDC trustline not active" };
   } else {
     try {
       await ensureFaucetTrustline(faucetSecret);
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       usdc = {
         ok: false,
-        error: e instanceof Error ? e.message : "Setup faucet gagal",
+        error: e instanceof Error ? e.message : "Faucet setup failed",
       };
     }
   }
@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
   if (!xlm.ok && !usdc.ok) {
     return NextResponse.json(
       {
-        error: "XLM dan USDC gagal",
+        error: "XLM and USDC drip failed",
         xlm,
         usdc,
-        hint: "Aktifkan trustline Circle USDC atau pakai faucet.circle.com",
+        hint: "Enable Circle USDC trustline or use faucet.circle.com",
       },
       { status: 500 }
     );
