@@ -65,11 +65,13 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
           }
           if (isMember) {
             const member = await getMember(circleId, address);
-            hasContributed = member.contributions_paid > round;
             collateralClaimed = member.collateral_claimed;
             isSlashed = member.is_slashed;
             hasReceivedPayout = member.has_received_payout;
             isExitedClean = member.is_exited_clean;
+            const selfRow = members.find((m) => m.address === address);
+            hasContributed =
+              selfRow?.paid ?? member.contributions_paid > round;
           }
         }
 

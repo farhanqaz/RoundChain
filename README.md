@@ -25,11 +25,13 @@ RoundChain implements a full ROSCA lifecycle on Soroban:
 
 | Capability | Implementation |
 |---|---|
-| **Collateral escrow** | USDC locked at join; released only after circle completion |
+| **Collateral escrow** | USDC locked at join; released after circle completion or clean exit |
 | **Fair payout order** | Fisher–Yates shuffle via Soroban PRNG when the last member joins |
 | **Auto-start** | No admin gate — circle activates when full |
-| **Round enforcement** | All members must contribute before payout; permissionless slashing |
-| **Financial reputation** | Persistent trust score updated on completion; gates entry to high-value circles |
+| **Round enforcement** | n−1 contributors pay each round; scheduled recipient is exempt. Permissionless slashing after period ends |
+| **Default handling** | Pot scales to active contributors only — no inflated payouts when someone is slashed |
+| **Financial reputation** | Persistent trust score; optional minimum score gates entry (applies to creator and joiners) |
+| **Platform fee** | Configurable per deploy (default 1%, max 5%); read on-chain via `get_fee_config` |
 
 The result is a savings protocol that preserves the social model of arisan while adding cryptographic guarantees suitable for underbanked users who lack traditional credit scores.
 
@@ -49,9 +51,9 @@ The result is a savings protocol that preserves the social model of arisan while
 │       │         [collateral in]  [shuffle payout order]         │
 │       │                │               │                        │
 │       ├── leave_circle / cancel_circle (while Pending)          │
-│       └──── contribute ◄──► trigger_payout (all must pay)       │
+│       └──── contribute ◄──► trigger_payout (contributors paid)  │
 │                    │                                            │
-│              slash_defaulter / exit_circle                      │
+│     slash_defaulter / exit_circle / complete_exit               │
 │                    │                                            │
 │         claim_collateral + trust score update                   │
 └──────────────────────────┬──────────────────────────────────┘
@@ -61,13 +63,17 @@ The result is a savings protocol that preserves the social model of arisan while
 
 ### Circle lifecycle
 
-1. **Configure** — Creator sets contribution amount, period duration, member cap, optional trust threshold, and optional join deadline.
-2. **Enroll** — Members join via invite link; collateral is locked in the contract. Members can **leave** while Pending for a full refund.
-3. **Activate** — When the last member joins, payout order is shuffled and the circle becomes Active automatically.
-4. **Operate** — Each round, all active members must contribute before payout releases. Defaulters may be slashed by anyone.
-5. **Resolve** — Members reclaim collateral after completion. Voluntary **exit** during Active forfeits collateral (same as default). Trust scores update for all participants.
+1. **Configure** — Set members, contribution per round, and round length (weekly / bi-weekly / monthly / custom). Optional min trust score and join window in advanced settings.
+2. **Enroll** — Creator is enrolled automatically on create (must meet min trust if set); others join via invite link and deposit collateral. **Leave** anytime while Pending for a full refund.
+3. **Activate** — When the last member joins, payout order is shuffled on-chain and the circle becomes Active.
+4. **Operate** — Each round, every active member **except the scheduled recipient** must contribute. Anyone can trigger payout once all obligated contributors paid and the period ended.
+5. **Resolve** — After your payout turn, use **complete exit** to prepay remaining rounds and reclaim collateral. Trust +10 is credited when the circle completes.
 
-Circles still Pending can be **cancelled** by the creator, or by anyone after the join deadline passes.
+Circles still Pending can be **cancelled** by the creator (if empty), or by anyone after the join deadline.
+
+### Pot math (example)
+
+3 members, 1 USDC per round → **2 USDC gross pot** per round (recipient does not pay that round). Net payout deducts the platform fee.
 
 ## Trust Score
 
@@ -76,12 +82,12 @@ RoundChain maintains a per-address reputation ledger in contract storage. Scores
 | Outcome | Score change |
 |---|---|
 | Circle completed without default | +10 |
-| Member slashed for non-payment | −25 |
+| **Complete exit** after payout (credited when circle completes) | +10 |
+| Member slashed for non-payment | −25 (immediate) |
 
-Circle creators may require a minimum score at creation time. This enables tiered pools — e.g., a member with three clean completions (score 30) qualifies for higher-contribution circles — without reliance on off-chain credit bureaus.
+Circle creators may require a minimum score at creation time — **the creator must meet it too**. This enables tiered pools without off-chain credit bureaus.
 
 ```rust
-// Score is floored at zero; stored as TrustScore { circles_completed, circles_defaulted, score }
 score = max(0, completed × 10 − defaulted × 25)
 ```
 
@@ -89,8 +95,8 @@ score = max(0, completed × 10 − defaulted × 25)
 
 | | |
 |---|---|
-| **Contract** | `CCAXJYS7UXTDZW72VJXSYOSG7PEHVSQDN7MBBGWG7R3A4EWJ2EN2BXNG` |
-| **Explorer** | [stellar.expert/explorer/testnet/contract/…](https://stellar.expert/explorer/testnet/contract/CCAXJYS7UXTDZW72VJXSYOSG7PEHVSQDN7MBBGWG7R3A4EWJ2EN2BXNG) |
+| **Contract** | `CDYUIAZD2RCFRX7FYVKGPE2ED4H4ZUNGHMSGEOVKA42OAK3CBBVE55KO` |
+| **Explorer** | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CDYUIAZD2RCFRX7FYVKGPE2ED4H4ZUNGHMSGEOVKA42OAK3CBBVE55KO) |
 | **USDC (Circle SAC)** | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 | **Network** | Stellar Testnet |
 
@@ -99,18 +105,19 @@ score = max(0, completed × 10 − defaulted × 25)
 ```
 roundchain-contract/     Soroban contract (Rust, SDK v26)
   contracts/roundchain/  Core ROSCA + trust score logic
-  scripts/deploy.sh        Testnet deployment
+  scripts/deploy.sh      Testnet deployment
 
-roundchain-web/            Next.js 14 application
-  src/lib/contract.ts      Contract bindings & RPC client
-  src/components/          Circle dashboard, wallet UI, member actions
+roundchain-web/          Next.js 14 application
+  src/lib/contract.ts    Contract bindings & RPC client
+  src/components/        Circle dashboard, wallet UI, member actions
 ```
 
-Contract test suite: **11 passing tests** covering fair exit, collateral scaling, cancel rules, and payout hardening.
+| Suite | Tests |
+|---|---|
+| Soroban contract | **17** (fair exit, default pot, full-cycle with default, recipient exempt) |
+| Web client (Vitest) | **40** (circle logic, trust, errors, contract parsing) |
 
-Web client: **38 unit tests** (Vitest) for trust scoring, circle logic, error parsing, and contract data normalization.
-
-CI runs both suites on every push to `main` via GitHub Actions (`.github/workflows/test.yml`).
+CI runs both suites on every push to `main` via [GitHub Actions](.github/workflows/test.yml).
 
 ## Contract Interface
 
@@ -118,20 +125,22 @@ CI runs both suites on every push to `main` via GitHub Actions (`.github/workflo
 
 | Function | Authorization | Description |
 |---|---|---|
-| `create_circle` | Creator | Initialize circle parameters, optional trust threshold & join deadline |
+| `init` | Once | Whitelist USDC token, fee recipient, platform fee bps |
+| `create_circle` | Creator | Open circle + auto-enroll creator; optional trust & join deadline |
 | `join_circle` | Member | Deposit collateral; auto-starts when full |
 | `leave_circle` | Member | Refund collateral while Pending |
-| `cancel_circle` | Creator / anyone after deadline | Refund all members; status Cancelled |
-| `start_circle` | Any | Permissionless recovery if Pending + full |
-| `contribute` | Member | Submit round payment |
-| `trigger_payout` | Any | Disburse pot when all active members paid |
-| `slash_defaulter` | Any | Forfeit defaulter collateral |
-| `exit_circle` | Member | Voluntary forfeit during Active |
+| `cancel_circle` | Creator / anyone after deadline | Refund all members |
+| `start_circle` | Any | Recovery if Pending + full |
+| `contribute` | Member | Pay current round (recipient cannot pay on their turn) |
+| `trigger_payout` | Any | Disburse pot when contributors paid + period ended |
+| `slash_defaulter` | Any | Forfeit defaulter collateral (after period ends) |
+| `complete_exit` | Member (after payout) | Prepay remaining rounds; collateral returned |
+| `exit_circle` | Member (before payout) | Forfeit collateral after period ends (not after paying same round) |
 | `claim_collateral` | Member | Withdraw collateral post-completion |
 
 ### Read-only
 
-`get_circle` · `get_member` · `get_contribution_status` · `get_next_circle_id` · `get_trust_score`
+`get_circle` · `get_member` · `get_contribution_status` · `get_next_circle_id` · `get_trust_score` · `get_fee_config`
 
 ## Local Development
 
@@ -147,7 +156,7 @@ cp .env.local.example .env.local
 npm install && npm test && npm run dev
 ```
 
-Configure Freighter for testnet, establish a USDC trustline (Circle issuer), and fund via [faucet.circle.com](https://faucet.circle.com/). An optional server-side faucet is available by setting `FAUCET_SECRET_KEY` in `.env.local`.
+Configure Freighter for testnet, establish a USDC trustline (Circle issuer), and fund via [faucet.circle.com](https://faucet.circle.com/). Optional server-side faucet: set `FAUCET_SECRET_KEY` in `.env.local`.
 
 See [`roundchain-contract/README.md`](roundchain-contract/README.md) and [`roundchain-web/README.md`](roundchain-web/README.md) for module-level documentation.
 

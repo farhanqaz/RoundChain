@@ -9,6 +9,7 @@ import { useWallet } from "@/providers/WalletProvider";
 import { DEMO_CONTRIBUTION } from "@/lib/constants";
 import {
   buildCreateCircleOp,
+  collateralForCircle,
   formatUsdc,
   getNextCircleId,
   signWithFreighter,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/setup";
 import { USDC_ISSUER, USDC_SAC } from "@/lib/usdc-assets";
 import { CopyButton } from "@/components/CopyButton";
+import { PageShell } from "@/components/PageShell";
 
 const STEPS = ["Wallet", "USDC", "Balance", "Circle"];
 
@@ -37,15 +39,17 @@ export default function DemoPage() {
   const [circleId, setCircleId] = useState<number | null>(null);
 
   const minUsdc = BigInt(DEMO_CONTRIBUTION);
+  const demoCollateral = collateralForCircle(minUsdc, 2);
+  const minBalance = minUsdc > demoCollateral ? minUsdc : demoCollateral;
   const stepIndex = !address ? 0 : !trustline ? 1 : !usdcOk ? 2 : circleId ? 4 : 3;
 
   const refresh = useCallback(async () => {
     if (!address) return;
-    const status = await checkWalletSetup(address, minUsdc);
+    const status = await checkWalletSetup(address, minBalance);
     setTrustline(status.hasTrustline);
     setUsdcBalance(status.usdcBalance);
     setUsdcOk(status.ready);
-  }, [address, minUsdc]);
+  }, [address, minBalance]);
 
   useEffect(() => {
     refresh();
@@ -85,13 +89,13 @@ export default function DemoPage() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
-    <div className="mx-auto max-w-xl space-y-8">
+    <PageShell className="mx-auto max-w-xl space-y-8">
       <PageHeader
         backHref="/"
         backLabel="Home"
         label="Sandbox"
         title="Practice circle"
-        description="Quick preset: 2 members, 60-second rounds, 0.1 USDC. For a real circle, use Create Circle."
+        description="Quick preset: 2 members, 60-second rounds, 0.1 USDC. You're enrolled when you create."
         action={
           <Link href="/create" className="btn-ghost text-sm">
             Create circle →
@@ -150,7 +154,7 @@ export default function DemoPage() {
               {trustline && (
                 <p className="text-xs text-muted">
                   Balance: {formatUsdc(usdcBalance)} USDC
-                  {!usdcOk && ` · min. ${formatUsdc(minUsdc)}`}
+                  {!usdcOk && ` · min. ${formatUsdc(minBalance)} (incl. collateral)`}
                 </p>
               )}
             </div>
@@ -160,7 +164,9 @@ export default function DemoPage() {
         <StepRow done={!!circleId} active={stepIndex === 3} title="Create practice circle" last>
           {!circleId ? (
             <>
-              <p className="text-sm text-muted">Preset: 2 members · 60 seconds · 0.1 USDC</p>
+              <p className="text-sm text-muted">
+                Preset: 2 members · 60 seconds · 0.1 USDC · you join on create
+              </p>
               <button
                 onClick={handleCreate}
                 disabled={creating || stepIndex !== 3}
@@ -176,7 +182,7 @@ export default function DemoPage() {
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
-    </div>
+    </PageShell>
   );
 }
 
@@ -193,7 +199,7 @@ function SuccessPanel({
   return (
     <div className="space-y-4">
       <Alert variant="success" title={`Circle #${circleId} is ready`}>
-        Join as a member and invite one more person. The circle starts automatically when full.
+        You&apos;re enrolled. Invite one more person — the circle starts automatically when full.
       </Alert>
       <div className="flex gap-2">
         <CopyButton text={joinUrl} label="Copy invite" />
@@ -201,14 +207,9 @@ function SuccessPanel({
           WhatsApp
         </a>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Link href={`/join/${circleId}`} className="btn-primary text-center text-sm">
-          Join now
-        </Link>
-        <Link href={`/circle/${circleId}`} className="btn-secondary text-center text-sm">
-          View circle
-        </Link>
-      </div>
+      <Link href={`/circle/${circleId}`} className="btn-primary block text-center text-sm">
+        View circle
+      </Link>
     </div>
   );
 }

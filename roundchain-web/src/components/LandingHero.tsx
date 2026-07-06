@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconArrowRight, IconList, IconLock, IconShield } from "@/components/icons";
+import { PlatformFeeNote } from "@/components/PlatformFeeNote";
 import { LogoMark } from "@/components/LogoMark";
 
 const FEATURES = [
   {
     icon: IconLock,
     title: "Funds locked on-chain",
-    desc: "Collateral enters the contract when you join. It only returns after the circle completes.",
+    desc: "Collateral is locked when you create or join. It returns after the circle completes or a clean exit.",
   },
   {
     icon: IconShield,
@@ -19,15 +20,15 @@ const FEATURES = [
   },
   {
     icon: IconList,
-    title: "Transparent payout order",
-    desc: "Payout sequence is permanently recorded. Every member can verify when their turn arrives.",
+    title: "Fair payout order",
+    desc: "Order is shuffled on-chain when the circle starts. Each round, n−1 members pay; the scheduled recipient is exempt.",
   },
 ];
 
 const STEPS = [
-  { n: "01", title: "Create a circle", desc: "Set members, contribution, and round schedule." },
-  { n: "02", title: "Invite members", desc: "Share a link — everyone joins and deposits collateral." },
-  { n: "03", title: "Run rounds", desc: "Pay each period. Payout order is shuffled on-chain at start." },
+  { n: "01", title: "Create a circle", desc: "Set members, contribution, and round length — you're enrolled and deposit collateral on create." },
+  { n: "02", title: "Invite members", desc: "Share a link — others join and deposit collateral. The circle starts automatically when full." },
+  { n: "03", title: "Run rounds", desc: "Contributors pay each period (recipient exempt on their turn). Anyone can release the pot when all obligated members paid." },
 ];
 
 const DEMO_MEMBERS = [
@@ -181,6 +182,10 @@ export function LandingHero() {
             </div>
           ))}
         </div>
+        <p className="text-sm text-muted">
+          Platform fee on each payout release:{" "}
+          <PlatformFeeNote className="text-foreground" suffix=" (on-chain)" />
+        </p>
       </section>
     </div>
   );

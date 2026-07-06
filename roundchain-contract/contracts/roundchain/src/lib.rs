@@ -10,12 +10,13 @@ use soroban_sdk::{
 };
 use storage::{
     delete_member, has_allowed_token, member_exists, read_allowed_token, read_circle,
-    read_member, read_next_circle_id, read_trust_score, write_allowed_token, write_circle,
-    write_member, write_next_circle_id, write_trust_score,
+    read_fee_recipient, read_member, read_next_circle_id, read_platform_fee_bps, read_trust_score,
+    write_allowed_token, write_circle, write_fee_recipient, write_member, write_next_circle_id,
+    write_platform_fee_bps, write_trust_score,
 };
 use types::{
     collateral_amount, compute_trust_score, CircleState, CircleStatus, ContributionEntry,
-    MemberState, TrustScore, DEFAULT_JOIN_WINDOW_SECS, MAX_MEMBERS_CAP,
+    MemberState, TrustScore, DEFAULT_JOIN_WINDOW_SECS, MAX_MEMBERS_CAP, MAX_PLATFORM_FEE_BPS,
 };
 
 #[contract]
@@ -23,12 +24,17 @@ pub struct RoundChainContract;
 
 #[contractimpl]
 impl RoundChainContract {
-    /// One-time: whitelist the SAC token address used by `create_circle`.
-    pub fn init(env: Env, allowed_token: Address) {
+    /// One-time: whitelist token, fee recipient, and platform fee (basis points).
+    pub fn init(env: Env, allowed_token: Address, fee_recipient: Address, platform_fee_bps: u32) {
         if has_allowed_token(&env) {
             panic_with_error!(&env, RoundChainError::AlreadyInitialized);
         }
+        if platform_fee_bps > MAX_PLATFORM_FEE_BPS {
+            panic_with_error!(&env, RoundChainError::InvalidFee);
+        }
         write_allowed_token(&env, &allowed_token);
+        write_fee_recipient(&env, &fee_recipient);
+        write_platform_fee_bps(&env, platform_fee_bps);
     }
 
     /// Creator opens a new ROSCA circle.
@@ -89,6 +95,16 @@ impl RoundChainContract {
         };
 
         write_circle(&env, circle_id, &circle);
+
+        let mut circle = read_circle(&env, circle_id).unwrap_or_else(|_| {
+            panic_with_error!(&env, RoundChainError::CircleNotFound);
+        });
+        Self::enroll_member(&env, circle_id, &mut circle, &creator, true);
+        if circle.member_count == circle.max_members {
+            Self::activate_circle(&env, &mut circle);
+        }
+        write_circle(&env, circle_id, &circle);
+
         circle_id
     }
 
@@ -101,52 +117,7 @@ impl RoundChainContract {
             panic_with_error!(&env, RoundChainError::CircleNotFound);
         });
 
-        if circle.status != CircleStatus::Pending {
-            panic_with_error!(&env, RoundChainError::CircleNotPending);
-        }
-        if circle.member_count >= circle.max_members {
-            panic_with_error!(&env, RoundChainError::CircleFull);
-        }
-        if member_exists(&env, circle_id, &member) {
-            panic_with_error!(&env, RoundChainError::AlreadyMember);
-        }
-
-        let now = env.ledger().timestamp();
-        if now > circle.join_deadline {
-            panic_with_error!(&env, RoundChainError::JoinDeadlinePassed);
-        }
-
-        if let Some(min_score) = circle.min_trust_score {
-            let trust = read_trust_score(&env, &member);
-            if trust.score < min_score {
-                panic_with_error!(&env, RoundChainError::InsufficientTrustScore);
-            }
-        }
-
-        let collateral = collateral_amount(circle.contribution_amount, circle.max_members);
-        let token_client = token::TokenClient::new(&env, &circle.token);
-        token_client.transfer(
-            &member,
-            &env.current_contract_address(),
-            &collateral,
-        );
-
-        let member_state = MemberState {
-            address: member.clone(),
-            collateral_deposited: collateral,
-            contributions_paid: 0,
-            has_received_payout: false,
-            is_slashed: false,
-            collateral_claimed: false,
-            is_exited_clean: false,
-            prepaid_rounds: 0,
-            exit_at_round: 0,
-            trust_settled: false,
-        };
-        write_member(&env, circle_id, &member_state);
-
-        circle.payout_order.push_back(member);
-        circle.member_count += 1;
+        Self::enroll_member(&env, circle_id, &mut circle, &member, true);
 
         if circle.member_count == circle.max_members {
             Self::activate_circle(&env, &mut circle);
@@ -254,6 +225,10 @@ impl RoundChainContract {
             panic_with_error!(&env, RoundChainError::UseCompleteExit);
         }
 
+        // Block mid-round exit after paying for the current round.
+        if member_state.contributions_paid > circle.current_round {
+            panic_with_error!(&env, RoundChainError::CannotExitEarly);
+        }
         if member_state.contributions_paid <= circle.current_round
             && env.ledger().timestamp() < circle.next_payout_time
         {
@@ -314,8 +289,6 @@ impl RoundChainContract {
             member_state.collateral_claimed = true;
         }
 
-        Self::apply_trust_completed(&env, &member);
-        member_state.trust_settled = true;
         write_member(&env, circle_id, &member_state);
     }
 
@@ -337,6 +310,9 @@ impl RoundChainContract {
 
         if member_state.is_slashed || member_state.is_exited_clean {
             panic_with_error!(&env, RoundChainError::MemberExited);
+        }
+        if Self::is_round_recipient(&circle, &member, circle.current_round) {
+            panic_with_error!(&env, RoundChainError::RecipientCannotContribute);
         }
         if member_state.contributions_paid != circle.current_round {
             panic_with_error!(&env, RoundChainError::AlreadyContributed);
@@ -378,14 +354,20 @@ impl RoundChainContract {
             panic_with_error!(&env, RoundChainError::MemberNotFound);
         });
 
-        if Self::member_is_active(&recipient_state)
-            && recipient_state.contributions_paid <= circle.current_round
-        {
-            panic_with_error!(&env, RoundChainError::RecipientNotPaid);
-        }
-
         let pot = Self::calculate_round_pot(&env, circle_id, &circle);
+        let (net_pot, fee) = Self::split_platform_fee(&env, pot);
         let token_client = token::TokenClient::new(&env, &circle.token);
+
+        if fee > 0 {
+            let treasury = read_fee_recipient(&env).unwrap_or_else(|_| {
+                panic_with_error!(&env, RoundChainError::NotInitialized);
+            });
+            token_client.transfer(
+                &env.current_contract_address(),
+                &treasury,
+                &fee,
+            );
+        }
 
         if !Self::member_is_active(&recipient_state) {
             Self::distribute_equal(
@@ -393,7 +375,7 @@ impl RoundChainContract {
                 circle_id,
                 &circle,
                 &token_client,
-                pot,
+                net_pot,
                 None,
                 circle.current_round,
             );
@@ -401,11 +383,17 @@ impl RoundChainContract {
             if recipient_state.has_received_payout {
                 panic_with_error!(&env, RoundChainError::AlreadyReceivedPayout);
             }
-            token_client.transfer(
-                &env.current_contract_address(),
-                &recipient,
-                &pot,
-            );
+            // Recipient is exempt from paying this round — keep round counter in sync.
+            if recipient_state.contributions_paid <= circle.current_round {
+                recipient_state.contributions_paid = circle.current_round + 1;
+            }
+            if net_pot > 0 {
+                token_client.transfer(
+                    &env.current_contract_address(),
+                    &recipient,
+                    &net_pot,
+                );
+            }
             recipient_state.has_received_payout = true;
             write_member(&env, circle_id, &recipient_state);
         }
@@ -499,7 +487,7 @@ impl RoundChainContract {
             let member_state = read_member(&env, circle_id, &addr).unwrap_or_else(|_| {
                 panic_with_error!(&env, RoundChainError::MemberNotFound);
             });
-            let paid = Self::has_paid_round(&member_state, round);
+            let paid = Self::round_obligation_met(&circle, &member_state, round);
             result.push_back(ContributionEntry {
                 address: addr,
                 paid,
@@ -507,11 +495,106 @@ impl RoundChainContract {
         }
         result
     }
+
+    pub fn get_fee_config(env: Env) -> (Address, u32) {
+        let recipient = read_fee_recipient(&env).unwrap_or_else(|_| {
+            panic_with_error!(&env, RoundChainError::NotInitialized);
+        });
+        let bps = read_platform_fee_bps(&env).unwrap_or_else(|_| {
+            panic_with_error!(&env, RoundChainError::NotInitialized);
+        });
+        (recipient, bps)
+    }
 }
 
 impl RoundChainContract {
+    fn enroll_member(
+        env: &Env,
+        circle_id: u32,
+        circle: &mut CircleState,
+        member: &Address,
+        check_trust: bool,
+    ) {
+        if circle.status != CircleStatus::Pending {
+            panic_with_error!(env, RoundChainError::CircleNotPending);
+        }
+        if circle.member_count >= circle.max_members {
+            panic_with_error!(env, RoundChainError::CircleFull);
+        }
+        if member_exists(env, circle_id, member) {
+            panic_with_error!(env, RoundChainError::AlreadyMember);
+        }
+
+        let now = env.ledger().timestamp();
+        if now > circle.join_deadline {
+            panic_with_error!(env, RoundChainError::JoinDeadlinePassed);
+        }
+
+        if check_trust {
+            if let Some(min_score) = circle.min_trust_score {
+                let trust = read_trust_score(env, member);
+                if trust.score < min_score {
+                    panic_with_error!(env, RoundChainError::InsufficientTrustScore);
+                }
+            }
+        }
+
+        let collateral = collateral_amount(circle.contribution_amount, circle.max_members);
+        let token_client = token::TokenClient::new(env, &circle.token);
+        token_client.transfer(
+            member,
+            &env.current_contract_address(),
+            &collateral,
+        );
+
+        let member_state = MemberState {
+            address: member.clone(),
+            collateral_deposited: collateral,
+            contributions_paid: 0,
+            has_received_payout: false,
+            is_slashed: false,
+            collateral_claimed: false,
+            is_exited_clean: false,
+            prepaid_rounds: 0,
+            exit_at_round: 0,
+            trust_settled: false,
+        };
+        write_member(env, circle_id, &member_state);
+
+        circle.payout_order.push_back(member.clone());
+        circle.member_count += 1;
+    }
+
+    fn split_platform_fee(env: &Env, gross: i128) -> (i128, i128) {
+        if gross <= 0 {
+            return (0, 0);
+        }
+        let bps = read_platform_fee_bps(env).unwrap_or(0);
+        if bps == 0 {
+            return (gross, 0);
+        }
+        let fee = gross * (bps as i128) / 10_000;
+        (gross - fee, fee)
+    }
+
     fn member_is_active(state: &MemberState) -> bool {
         !state.is_slashed && !state.is_exited_clean
+    }
+
+    fn is_round_recipient(circle: &CircleState, member: &Address, round: u32) -> bool {
+        circle
+            .payout_order
+            .get(round)
+            .map(|r| r == *member)
+            .unwrap_or(false)
+    }
+
+    /// True when the member has paid or is the scheduled recipient (exempt this round).
+    fn round_obligation_met(circle: &CircleState, state: &MemberState, round: u32) -> bool {
+        if Self::is_round_recipient(circle, &state.address, round) {
+            return true;
+        }
+        Self::has_paid_round(state, round)
     }
 
     fn has_paid_round(state: &MemberState, round: u32) -> bool {
@@ -568,7 +651,7 @@ impl RoundChainContract {
         for addr in circle.payout_order.iter() {
             if let Ok(member_state) = read_member(env, circle_id, &addr) {
                 if Self::member_is_active(&member_state)
-                    && member_state.contributions_paid <= circle.current_round
+                    && !Self::round_obligation_met(circle, &member_state, circle.current_round)
                 {
                     return false;
                 }
@@ -595,6 +678,9 @@ impl RoundChainContract {
 
         if member_state.is_slashed || member_state.is_exited_clean {
             panic_with_error!(env, RoundChainError::MemberExited);
+        }
+        if !voluntary && Self::is_round_recipient(&circle, member, circle.current_round) {
+            panic_with_error!(env, RoundChainError::CannotSlash);
         }
         if !voluntary && member_state.contributions_paid > circle.current_round {
             panic_with_error!(env, RoundChainError::CannotSlash);
@@ -679,6 +765,22 @@ impl RoundChainContract {
         }
     }
 
+    fn expected_contributor_count(env: &Env, circle_id: u32, circle: &CircleState) -> u32 {
+        let scheduled = circle.payout_order.get(circle.current_round);
+        let mut count: u32 = 0;
+        for addr in circle.payout_order.iter() {
+            if scheduled.as_ref() == Some(&addr) {
+                continue;
+            }
+            if let Ok(state) = read_member(env, circle_id, &addr) {
+                if Self::member_is_active(&state) {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
+
     fn calculate_round_pot(env: &Env, circle_id: u32, circle: &CircleState) -> i128 {
         let len = circle.payout_order.len();
         if len <= 1 {
@@ -701,9 +803,13 @@ impl RoundChainContract {
             }
         }
 
-        // When all active obligations are met, remaining members receive a full ROSCA pot
-        // ((n - 1) × contribution) — prepaid complete_exit settlements cover any shortfall.
-        let full_pot = (len as i128 - 1) * circle.contribution_amount;
+        // Boost only to the active contributor obligation for this round.
+        // Prepaid complete_exit rounds are already counted via has_paid_round above.
+        let expected = Self::expected_contributor_count(env, circle_id, circle);
+        if expected == 0 {
+            return pot;
+        }
+        let full_pot = (expected as i128) * circle.contribution_amount;
         if pot < full_pot && Self::all_active_paid(env, circle_id, circle) {
             pot = full_pot;
         }

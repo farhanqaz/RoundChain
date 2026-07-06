@@ -20,9 +20,13 @@ CONTRACT_ID=$(stellar contract deploy \
   --network "$NETWORK" \
   --alias roundchain)
 
-echo "==> Initializing allowed token..."
+FEE_RECIPIENT=$(stellar keys address "$SOURCE")
+
+echo "==> Initializing token whitelist + 1% platform fee..."
 stellar contract invoke --id "$CONTRACT_ID" --source "$SOURCE" --network "$NETWORK" -- init \
-  --allowed_token "$USDC_SAC"
+  --allowed_token "$USDC_SAC" \
+  --fee_recipient "$FEE_RECIPIENT" \
+  --platform_fee_bps 100
 
 echo ""
 echo "Deployed RoundChain contract:"

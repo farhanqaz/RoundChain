@@ -21,11 +21,12 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "RoundChain — On-Chain ROSCA",
   description:
-    "Trustless savings circles on Stellar Soroban. Locked collateral, transparent payout order, automatic enforcement, and on-chain trust scores.",
+    "Trustless ROSCA on Stellar Soroban. Locked collateral, shuffled payout order, n−1 contributors per round, and on-chain trust scores.",
   icons: { icon: "/favicon.svg" },
   openGraph: {
-    title: "RoundChain — Trustless Savings Circles",
-    description: "Run a ROSCA without trusting a treasurer. Smart contracts on Stellar hold the rules.",
+    title: "RoundChain — On-Chain ROSCA",
+    description:
+      "Rotating savings circles with smart-contract rules. Recipient-exempt rounds, fair shuffle, automatic enforcement.",
     type: "website",
   },
 };

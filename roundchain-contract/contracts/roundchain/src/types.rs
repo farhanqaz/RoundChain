@@ -3,6 +3,8 @@ use soroban_sdk::{contracttype, Address, Vec};
 pub const TRUST_POINTS_COMPLETED: u32 = 10;
 pub const TRUST_PENALTY_DEFAULTED: u32 = 25;
 pub const MAX_MEMBERS_CAP: u32 = 50;
+pub const DEFAULT_PLATFORM_FEE_BPS: u32 = 100; // 1%
+pub const MAX_PLATFORM_FEE_BPS: u32 = 500; // 5% cap
 /// Default join window when caller omits join_deadline (30 days).
 pub const DEFAULT_JOIN_WINDOW_SECS: u64 = 30 * 86_400;
 

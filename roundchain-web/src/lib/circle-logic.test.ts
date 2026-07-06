@@ -1,12 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   activeDefaulters,
-  allActivePaid,
+  allContributorsPaid,
   calculateRoundPot,
   canRecipientClaimPayout,
+  canTriggerPayout,
+  canVoluntaryExit,
   formatPeriod,
   isPeriodEnded,
-  recipientIsDefaulter,
+  memberHasPaidRound,
+  memberMustPayThisRound,
+  netPotAfterFee,
   scheduledRecipient,
   timeRemaining,
 } from "./circle-logic";
@@ -71,44 +75,52 @@ describe("time helpers", () => {
 });
 
 describe("round pot", () => {
-  it("sums non-recipient paid members (full pot when all paid)", () => {
-    const members = MEMBERS([true, true, true]);
+  it("sums non-recipient paid members (full pot when contributors paid)", () => {
+    const members = MEMBERS([false, true, true]);
     expect(
       calculateRoundPot(members, BigInt(10_000_000), ORDER, 0)
     ).toBe(BigInt(20_000_000));
   });
 
-  it("excludes slashed members", () => {
-    const members = MEMBERS([true, true, true]);
+  it("excludes slashed members — pot is active contributors only", () => {
+    const members = MEMBERS([false, true, true]);
     members[2].is_slashed = true;
     members[2].paid = false;
     expect(
       calculateRoundPot(members, BigInt(10_000_000), ORDER, 0)
-    ).toBe(BigInt(20_000_000));
+    ).toBe(BigInt(10_000_000));
+  });
+
+  it("deducts platform fee from gross pot", () => {
+    expect(netPotAfterFee(BigInt(100_000_000), 100)).toBe(BigInt(99_000_000));
+    expect(netPotAfterFee(BigInt(0), 100)).toBe(BigInt(0));
+  });
+});
+
+describe("formatFeePercent", () => {
+  it("formats basis points as percent", async () => {
+    const { formatFeePercent } = await import("./circle-logic");
+    expect(formatFeePercent(100)).toBe("1%");
+    expect(formatFeePercent(150)).toBe("1.5%");
   });
 });
 
 describe("contribution status", () => {
-  it("requires all active members paid", () => {
-    expect(allActivePaid(MEMBERS([true, true, false]))).toBe(false);
-    expect(allActivePaid(MEMBERS([true, true, true]))).toBe(true);
+  it("requires contributors paid, not recipient", () => {
+    expect(allContributorsPaid(MEMBERS([false, true, false]), ORDER, 0)).toBe(false);
+    expect(allContributorsPaid(MEMBERS([false, true, true]), ORDER, 0)).toBe(true);
   });
 
-  it("ignores exited-clean members", () => {
-    const members = MEMBERS([true, false, true]);
-    members[0].is_exited_clean = true;
-    members[0].paid = true;
-    expect(allActivePaid(members)).toBe(false);
+  it("lists unpaid contributors as defaulters", () => {
+    const members = MEMBERS([false, false, true]);
+    expect(activeDefaulters(members, ORDER, 0).map((m) => m.address)).toEqual([
+      "GADDR1",
+    ]);
   });
 
-  it("flags unpaid recipient as defaulter", () => {
-    const members = MEMBERS([true, false, true]);
-    expect(recipientIsDefaulter(members, ORDER, 1)).toBe(true);
-  });
-
-  it("lists active defaulters", () => {
-    const members = MEMBERS([true, false, true]);
-    expect(activeDefaulters(members).map((m) => m.address)).toEqual(["GADDR1"]);
+  it("recipient must not pay on their round", () => {
+    expect(memberMustPayThisRound("GADDR0", ORDER, 0)).toBe(false);
+    expect(memberMustPayThisRound("GADDR1", ORDER, 0)).toBe(true);
   });
 });
 
@@ -122,8 +134,8 @@ describe("payout claim", () => {
     vi.useRealTimers();
   });
 
-  it("allows recipient when period ended and all paid", () => {
-    const members = MEMBERS([true, true, true]);
+  it("allows recipient when period ended and contributors paid", () => {
+    const members = MEMBERS([false, true, true]);
     const now = BigInt(Math.floor(Date.now() / 1000));
     expect(
       canRecipientClaimPayout("GADDR0", members, ORDER, 0, now - BigInt(1), "Active")
@@ -131,7 +143,7 @@ describe("payout claim", () => {
   });
 
   it("rejects before period ends", () => {
-    const members = MEMBERS([true, true, true]);
+    const members = MEMBERS([false, true, true]);
     const now = BigInt(Math.floor(Date.now() / 1000));
     expect(
       canRecipientClaimPayout("GADDR0", members, ORDER, 0, now + BigInt(60), "Active")
@@ -140,5 +152,39 @@ describe("payout claim", () => {
 
   it("resolves scheduled recipient", () => {
     expect(scheduledRecipient(ORDER, 1)).toBe("GADDR1");
+  });
+
+  it("allows anyone to trigger when contributors paid", () => {
+    const members = MEMBERS([false, true, true]);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    expect(canTriggerPayout(members, ORDER, 0, now - BigInt(1), "Active")).toBe(true);
+    expect(canRecipientClaimPayout("GADDR1", members, ORDER, 0, now - BigInt(1), "Active")).toBe(
+      false
+    );
+  });
+});
+
+describe("contract-aligned helpers", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("uses on-chain paid flag for round status", () => {
+    const member = MEMBERS([false])[0];
+    expect(memberHasPaidRound(member)).toBe(false);
+    member.paid = true;
+    expect(memberHasPaidRound(member)).toBe(true);
+  });
+
+  it("blocks voluntary exit after paying this round", () => {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    expect(canVoluntaryExit(true, now + BigInt(3600))).toBe(false);
+    expect(canVoluntaryExit(false, now + BigInt(3600))).toBe(false);
+    expect(canVoluntaryExit(false, now - BigInt(1))).toBe(true);
   });
 });

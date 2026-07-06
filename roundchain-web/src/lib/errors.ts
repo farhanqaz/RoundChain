@@ -19,7 +19,7 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   18: "Invalid period duration",
   19: "Payout already received",
   20: "Trust score too low — complete circles to build reputation",
-  21: "Not all members have contributed this round",
+  21: "Not all contributors have paid this round",
   22: "Scheduled recipient has not paid this round",
   23: "Circle was cancelled",
   24: "Join deadline has passed",
@@ -29,7 +29,11 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   28: "Cannot exit before the round period ends (pay this round or wait)",
   29: "Use complete exit after receiving your payout",
   30: "Member already exited this circle",
+  31: "Contract already initialized",
+  32: "Contract not initialized — redeploy and run init",
   33: "Complete exit requires receiving a payout first",
+  34: "Invalid platform fee — must be 0–500 basis points",
+  35: "Scheduled recipient cannot pay on their payout round",
 };
 
 const TOKEN_ERRORS: Record<number, string> = {

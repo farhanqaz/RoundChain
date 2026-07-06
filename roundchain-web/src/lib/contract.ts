@@ -391,6 +391,16 @@ export async function getNextCircleId(): Promise<number> {
   }
 }
 
+export async function getFeeConfig(): Promise<{ recipient: string; feeBps: number }> {
+  try {
+    const val = await simulateRead("get_fee_config");
+    const [recipient, feeBps] = scValToNative(val) as [string, number];
+    return { recipient: toAddress(recipient), feeBps: Number(feeBps) };
+  } catch {
+    return { recipient: "", feeBps: 100 };
+  }
+}
+
 export async function listCircles(): Promise<
   Array<{ id: number; circle: CircleState }>
 > {

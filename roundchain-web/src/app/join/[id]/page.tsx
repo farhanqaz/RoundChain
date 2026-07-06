@@ -11,6 +11,20 @@ import { Alert } from "@/components/ui/Alert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useWallet } from "@/providers/WalletProvider";
 import { useCircle } from "@/hooks/useCircle";
+import { PageShell } from "@/components/PageShell";
+import { isJoinDeadlinePassed } from "@/lib/circle-logic";
+
+function JoinWindowNote({ deadline }: { deadline: bigint }) {
+  const closed = isJoinDeadlinePassed(deadline);
+  if (closed) {
+    return (
+      <Alert variant="warning" title="Join window closed">
+        This circle is no longer accepting members.
+      </Alert>
+    );
+  }
+  return null;
+}
 
 export default function JoinCirclePage() {
   const params = useParams();
@@ -24,7 +38,7 @@ export default function JoinCirclePage() {
   const seatsLeft = circle ? circle.max_members - circle.member_count : 0;
 
   return (
-    <div className="space-y-8">
+    <PageShell className="space-y-8">
       <PageHeader
         label="Invite"
         title={`Circle #${circleId}`}
@@ -35,6 +49,13 @@ export default function JoinCirclePage() {
       {circle?.status === "Pending" && seatsLeft > 0 && (
         <p className="-mt-4 pill-amber w-fit">{seatsLeft} seat{seatsLeft !== 1 ? "s" : ""} left</p>
       )}
+
+      {circle?.status === "Pending" &&
+        circle.join_deadline > BigInt(0) &&
+        data &&
+        circle.max_members > circle.member_count && (
+          <JoinWindowNote deadline={circle.join_deadline} />
+        )}
 
       {error && <Alert variant="error">{error}</Alert>}
 
@@ -67,7 +88,8 @@ export default function JoinCirclePage() {
             </Alert>
           )}
 
-          {address && !data.isMember && circle.status === "Pending" && seatsLeft > 0 && (
+          {address && !data.isMember && circle.status === "Pending" && seatsLeft > 0 &&
+            !(circle.join_deadline > BigInt(0) && isJoinDeadlinePassed(circle.join_deadline)) && (
             <CircleActions
               circleId={circleId}
               address={address}
@@ -94,6 +116,6 @@ export default function JoinCirclePage() {
           )}
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

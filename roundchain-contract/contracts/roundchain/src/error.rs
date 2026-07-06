@@ -37,4 +37,6 @@ pub enum RoundChainError {
     AlreadyInitialized = 31,
     NotInitialized = 32,
     NoPayoutReceived = 33,
+    InvalidFee = 34,
+    RecipientCannotContribute = 35,
 }

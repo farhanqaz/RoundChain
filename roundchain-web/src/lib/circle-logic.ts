@@ -1,3 +1,4 @@
+import { PLATFORM_FEE_BPS } from "./constants";
 import { MemberDetail } from "./contract";
 
 export function formatPeriod(seconds: bigint): string {
@@ -39,6 +40,31 @@ export function activeMembers(members: MemberDetail[]): MemberDetail[] {
   return members.filter((m) => !m.is_slashed && !m.is_exited_clean);
 }
 
+export function scheduledRecipient(
+  payoutOrder: string[],
+  currentRound: number
+): string | null {
+  return payoutOrder[currentRound] ?? null;
+}
+
+export function isScheduledRecipient(
+  address: string,
+  payoutOrder: string[],
+  currentRound: number
+): boolean {
+  return scheduledRecipient(payoutOrder, currentRound) === address;
+}
+
+/** Members who must pay this round (excludes scheduled recipient). */
+export function contributingMembers(
+  members: MemberDetail[],
+  payoutOrder: string[],
+  currentRound: number
+): MemberDetail[] {
+  const recipient = scheduledRecipient(payoutOrder, currentRound);
+  return activeMembers(members).filter((m) => m.address !== recipient);
+}
+
 export function calculateRoundPot(
   members: MemberDetail[],
   contributionAmount: bigint,
@@ -53,38 +79,49 @@ export function calculateRoundPot(
     pot += contributionAmount;
   }
   const fullPot =
-    BigInt(Math.max(0, payoutOrder.length - 1)) * contributionAmount;
-  if (pot < fullPot && allActivePaid(members)) {
+    BigInt(contributingMembers(members, payoutOrder, currentRound).length) *
+    contributionAmount;
+  if (pot < fullPot && allContributorsPaid(members, payoutOrder, currentRound)) {
     pot = fullPot;
   }
   return pot;
 }
 
-export function activeDefaulters(members: MemberDetail[]): MemberDetail[] {
-  return activeMembers(members).filter((m) => !m.paid);
+export function allContributorsPaid(
+  members: MemberDetail[],
+  payoutOrder: string[],
+  currentRound: number
+): boolean {
+  const contributors = contributingMembers(members, payoutOrder, currentRound);
+  return contributors.length > 0 && contributors.every((m) => m.paid);
 }
 
+/** @deprecated use allContributorsPaid — kept for tests */
 export function allActivePaid(members: MemberDetail[]): boolean {
   const active = activeMembers(members);
   return active.length > 0 && active.every((m) => m.paid);
 }
 
-export function scheduledRecipient(
-  payoutOrder: string[],
-  currentRound: number
-): string | null {
-  return payoutOrder[currentRound] ?? null;
-}
-
-export function recipientIsDefaulter(
+export function activeDefaulters(
   members: MemberDetail[],
   payoutOrder: string[],
   currentRound: number
+): MemberDetail[] {
+  return contributingMembers(members, payoutOrder, currentRound).filter((m) => !m.paid);
+}
+
+/** True when anyone may call trigger_payout on-chain. */
+export function canTriggerPayout(
+  members: MemberDetail[],
+  payoutOrder: string[],
+  currentRound: number,
+  nextPayoutTime: bigint,
+  status: string
 ): boolean {
-  const recipient = scheduledRecipient(payoutOrder, currentRound);
-  if (!recipient) return false;
-  const member = members.find((m) => m.address === recipient);
-  return !!member && !member.is_slashed && !member.is_exited_clean && !member.paid;
+  if (status !== "Active") return false;
+  if (!isPeriodEnded(nextPayoutTime)) return false;
+  if (!allContributorsPaid(members, payoutOrder, currentRound)) return false;
+  return true;
 }
 
 export function canRecipientClaimPayout(
@@ -95,13 +132,27 @@ export function canRecipientClaimPayout(
   nextPayoutTime: bigint,
   status: string
 ): boolean {
-  if (status !== "Active") return false;
   const recipient = scheduledRecipient(payoutOrder, currentRound);
   if (!recipient || recipient !== address) return false;
-  if (!isPeriodEnded(nextPayoutTime)) return false;
-  if (!allActivePaid(members)) return false;
-  if (recipientIsDefaulter(members, payoutOrder, currentRound)) return false;
-  return true;
+  return canTriggerPayout(members, payoutOrder, currentRound, nextPayoutTime, status);
+}
+
+export function memberHasPaidRound(member: MemberDetail): boolean {
+  return member.paid;
+}
+
+export function memberMustPayThisRound(
+  address: string,
+  payoutOrder: string[],
+  currentRound: number
+): boolean {
+  return !isScheduledRecipient(address, payoutOrder, currentRound);
+}
+
+/** Matches on-chain exit_circle: blocked if paid this round or before period ends while unpaid. */
+export function canVoluntaryExit(hasPaidThisRound: boolean, nextPayoutTime: bigint): boolean {
+  if (hasPaidThisRound) return false;
+  return isPeriodEnded(nextPayoutTime);
 }
 
 export function remainingSettlementRounds(
@@ -109,4 +160,19 @@ export function remainingSettlementRounds(
   currentRound: number
 ): number {
   return Math.max(0, totalRounds - currentRound);
+}
+
+export function formatFeePercent(feeBps: number): string {
+  const pct = feeBps / 100;
+  return Number.isInteger(pct) ? `${pct}%` : `${pct.toFixed(1)}%`;
+}
+
+/** Gross pot minus platform fee (matches on-chain trigger_payout). */
+export function netPotAfterFee(
+  grossPot: bigint,
+  feeBps: number = PLATFORM_FEE_BPS
+): bigint {
+  if (grossPot <= BigInt(0) || feeBps <= 0) return grossPot;
+  const fee = (grossPot * BigInt(feeBps)) / BigInt(10_000);
+  return grossPot - fee;
 }

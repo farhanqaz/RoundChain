@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlatformFeeNote } from "@/components/PlatformFeeNote";
 
 export function Footer() {
   return (
@@ -7,7 +8,9 @@ export function Footer() {
         <div className="max-w-sm space-y-2">
           <p className="font-medium text-foreground">RoundChain</p>
           <p className="text-sm leading-relaxed text-muted">
-            On-chain savings circles on Stellar. Locked collateral, transparent rules, trust scores.
+            On-chain ROSCA on Stellar. Locked collateral, shuffled payout order, contributor-only
+            rounds, and portable trust scores.{" "}
+            <PlatformFeeNote prefix="" suffix=" fee on payout releases." />
           </p>
         </div>
         <div className="flex gap-16 text-sm">
@@ -28,6 +31,14 @@ export function Footer() {
             <Link href="/about" className="block text-muted transition hover:text-foreground">
               About
             </Link>
+            <a
+              href="https://github.com/farhanqaz/RoundChain"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-muted transition hover:text-foreground"
+            >
+              GitHub
+            </a>
             <a
               href="https://stellar.org"
               target="_blank"

@@ -201,6 +201,53 @@ input[type="number"]::-webkit-outer-spin-button {
     @apply h-px transition-all duration-700 ease-out;
   }
 
+  .progress-bar-glow {
+    background: var(--ring-fill);
+    position: relative;
+  }
+
+  .progress-bar-glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 100%
+    );
+    animation: progressShimmer 2.5s ease-in-out infinite;
+  }
+
+  .dark .progress-bar-glow::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 100%
+    );
+  }
+
+  .flow-viz {
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  .flow-pot {
+    animation: scaleIn 0.45s ease-out 0.15s both;
+  }
+
+  .flow-recipient {
+    animation: scaleIn 0.45s ease-out 0.25s both;
+  }
+
+  .flow-node {
+    animation: fadeUp 0.4s ease-out both;
+  }
+
+  .seat-filled {
+    animation: seatPop 0.35s ease-out both;
+  }
+
   .grid-divider {
     background: var(--border);
     @apply gap-px overflow-hidden rounded-md border;
@@ -260,6 +307,47 @@ input[type="number"]::-webkit-outer-spin-button {
     background-size: 200% 100%;
     animation: shimmer 2.5s ease-in-out infinite;
   }
+
+  .animate-page-enter {
+    animation: pageEnter 0.55s ease-out both;
+  }
+
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.45s ease-out both;
+  }
+
+  .animate-success-pop {
+    animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .stagger-item {
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.4s; }
+
+  .status-dot-active {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  .empty-icon-float {
+    animation: float 5s ease-in-out infinite;
+  }
+
+  .payout-pill-current {
+    animation: payoutGlow 2.5s ease-in-out infinite;
+  }
 }
 
 @keyframes fadeUp {
@@ -316,6 +404,81 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes successPop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes seatPop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes payoutGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--foreground);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo-ring-spin,
   .logo-dot,
@@ -323,7 +486,21 @@ input[type="number"]::-webkit-outer-spin-button {
   .animate-fade-up,
   .animate-fade-up-delay-1,
   .animate-fade-up-delay-2,
-  .animate-fade-up-delay-3 {
+  .animate-fade-up-delay-3,
+  .animate-page-enter,
+  .animate-pulse-soft,
+  .animate-scale-in,
+  .animate-success-pop,
+  .stagger-item,
+  .status-dot-active,
+  .empty-icon-float,
+  .payout-pill-current,
+  .flow-viz,
+  .flow-pot,
+  .flow-recipient,
+  .flow-node,
+  .seat-filled,
+  .progress-bar-glow::after {
     animation: none;
   }
 

@@ -1,5 +1,10 @@
 import { LandingHero } from "@/components/LandingHero";
+import { PageShell } from "@/components/PageShell";
 
 export default function Home() {
-  return <LandingHero />;
+  return (
+    <PageShell>
+      <LandingHero />
+    </PageShell>
+  );
 }

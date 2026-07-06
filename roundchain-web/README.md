@@ -6,11 +6,9 @@ Production-facing interface for the RoundChain ROSCA protocol. Connects to Sorob
 
 - Node.js 18+
 - Freighter browser extension (testnet)
-- Deployed contract ID (defaults provided in `.env.local.example`)
+- Deployed contract ID (see `.env.local.example`)
 
 ## Configuration
-
-Copy the example environment file and adjust if you have redeployed the contract:
 
 ```bash
 cp .env.local.example .env.local
@@ -25,12 +23,16 @@ cp .env.local.example .env.local
 | `NEXT_PUBLIC_EXPLORER_TX_URL` | Client | Transaction explorer base URL |
 | `FAUCET_SECRET_KEY` | Server | Optional faucet signer for `/api/faucet` |
 
+**Current testnet contract:** `CDYUIAZD2RCFRX7FYVKGPE2ED4H4ZUNGHMSGEOVKA42OAK3CBBVE55KO`
+
+Restart `npm run dev` after changing `.env.local`.
+
 ## Commands
 
 ```bash
 npm install
 npm run dev      # development server at localhost:3000
-npm test         # 38 unit tests (Vitest)
+npm test         # 40 unit tests (Vitest)
 npm run build    # production build
 npm run start    # serve production build
 npm run lint     # ESLint
@@ -41,14 +43,21 @@ npm run lint     # ESLint
 | Path | Role |
 |---|---|
 | `/` | Product landing |
-| `/demo` | Guided sandbox (short periods, minimal USDC) |
-| `/create` | Circle creation with optional trust threshold and join deadline |
+| `/demo` | Guided sandbox (60s periods, minimal USDC) |
+| `/create` | Circle creation with trust threshold and join window |
 | `/circles` | Index of on-chain circles |
-| `/circle/[id]` | Member operations: contribute, leave, exit, cancel, slash |
-| `/join/[id]` | Member enrollment via shared link |
-| `/about` | Protocol overview and RPC health |
+| `/circle/[id]` | Member dashboard: contribute, payout, exit, slash |
+| `/join/[id]` | Enrollment via shared link |
+| `/about` | Protocol overview, RPC health, contract addresses |
 
-Circles auto-start when the last member joins — no separate admin start step.
+Circles auto-start when the last member joins. Invite link is hidden when the circle is full or join window closed.
+
+## UX Highlights
+
+- **Recipient turn** — no Pay button; shows “waiting for contributors”
+- **Pot display** — net amount after on-chain fee (`get_fee_config`)
+- **Flow visualization** — round progress, contributor status, payout order
+- **Trust badge** — live score in header when wallet connected
 
 ## Wallet Setup (Testnet)
 
@@ -63,6 +72,7 @@ Circles auto-start when the last member joins — no separate admin start step.
 src/
   app/              Next.js App Router pages
   components/       UI, circle dashboard, wallet connect
-  lib/              Contract bindings, errors, faucet helpers
+  hooks/            useCircle, useFeeConfig
+  lib/              Contract bindings, circle logic, errors
   providers/        Wallet and theme context
 ```

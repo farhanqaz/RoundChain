@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
+import { PlatformFeeNote } from "@/components/PlatformFeeNote";
 import { IconLock, IconList, IconShield } from "@/components/icons";
 import {
   CONTRACT_ID,
@@ -15,7 +16,15 @@ import { server } from "@/lib/contract";
 const VALUES = [
   { icon: IconLock, title: "No middleman", desc: "Funds never pass through a human treasurer." },
   { icon: IconList, title: "Transparent rules", desc: "Every rule is recorded on-chain." },
-  { icon: IconShield, title: "Auto enforcement", desc: "Late payments trigger slashing — no group chat drama." },
+  { icon: IconShield, title: "Auto enforcement", desc: "Late payments trigger slashing after the round period ends." },
+];
+
+const PROTOCOL_RULES = [
+  "n−1 contributors pay each round; the scheduled recipient does not pay that round.",
+  "Payout order is shuffled on-chain when the last member joins.",
+  "Pot size matches active contributors — defaults do not inflate the payout.",
+  "Min trust score applies to the creator and all joiners.",
+  "Trust +10 after a clean completion; −25 immediately on slash.",
 ];
 
 export default function AboutPage() {
@@ -33,8 +42,10 @@ export default function AboutPage() {
         <h1 className="mt-2 text-3xl font-medium text-foreground">RoundChain</h1>
         <p className="mt-4 text-base leading-relaxed text-muted">
           A digital ROSCA (rotating savings circle) that replaces blind trust with Stellar Soroban
-          smart contracts. Collateral is locked on-chain, payout order is transparent, and late
-          members are penalized automatically. Complete circles to build an on-chain trust score.
+          smart contracts. Collateral is locked on-chain, payout order is shuffled fairly, and late
+          members are penalized automatically. A{" "}
+          <PlatformFeeNote suffix=" platform fee" /> applies on each payout release (read from the
+          contract). Complete circles to build an on-chain trust score.
         </p>
       </div>
 
@@ -46,6 +57,18 @@ export default function AboutPage() {
             <p className="mt-1 text-xs text-muted">{desc}</p>
           </div>
         ))}
+      </div>
+
+      <div className="border border-border bg-card p-6">
+        <h2 className="font-medium text-foreground">Protocol rules</h2>
+        <ul className="mt-4 space-y-2 text-sm text-muted">
+          {PROTOCOL_RULES.map((rule) => (
+            <li key={rule} className="flex gap-2">
+              <span className="text-muted">·</span>
+              <span>{rule}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="border border-border bg-card p-6">
@@ -77,11 +100,14 @@ export default function AboutPage() {
           </li>
           <li className="flex gap-3">
             <span className="font-mono text-xs text-muted">2</span>
-            <span>Invite members via link or WhatsApp</span>
+            <span>Invite members via link — circle starts automatically when full</span>
           </li>
           <li className="flex gap-3">
             <span className="font-mono text-xs text-muted">3</span>
-            <span>Start → pay each round → recipient claims payout</span>
+            <span>
+              Contributors pay each round → anyone releases payout when obligated members paid (
+              <PlatformFeeNote suffix=" fee" />)
+            </span>
           </li>
         </ol>
       </div>

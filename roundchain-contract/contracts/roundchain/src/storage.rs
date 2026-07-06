@@ -8,6 +8,8 @@ use crate::types::{CircleState, MemberState, TrustScore};
 pub enum DataKey {
     NextCircleId,
     AllowedToken,
+    FeeRecipient,
+    PlatformFeeBps,
     Circle(u32),
     Member(u32, Address),
     TrustScore(Address),
@@ -41,6 +43,32 @@ pub fn write_allowed_token(env: &Env, token: &Address) {
 
 pub fn has_allowed_token(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::AllowedToken)
+}
+
+pub fn read_fee_recipient(env: &Env) -> Result<Address, RoundChainError> {
+    env.storage()
+        .instance()
+        .get(&DataKey::FeeRecipient)
+        .ok_or(RoundChainError::NotInitialized)
+}
+
+pub fn write_fee_recipient(env: &Env, recipient: &Address) {
+    env.storage()
+        .instance()
+        .set(&DataKey::FeeRecipient, recipient);
+}
+
+pub fn read_platform_fee_bps(env: &Env) -> Result<u32, RoundChainError> {
+    env.storage()
+        .instance()
+        .get(&DataKey::PlatformFeeBps)
+        .ok_or(RoundChainError::NotInitialized)
+}
+
+pub fn write_platform_fee_bps(env: &Env, bps: u32) {
+    env.storage()
+        .instance()
+        .set(&DataKey::PlatformFeeBps, &bps);
 }
 
 pub fn read_circle(env: &Env, circle_id: u32) -> Result<CircleState, RoundChainError> {

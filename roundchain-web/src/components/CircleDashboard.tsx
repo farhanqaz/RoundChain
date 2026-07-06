@@ -3,11 +3,16 @@
 import {
   CircleState,
   MemberDetail,
+  collateralForCircle,
   formatUsdc,
   shortenAddress,
   timeRemaining,
 } from "@/lib/contract";
-import { calculateRoundPot, formatPeriod } from "@/lib/circle-logic";
+import { calculateRoundPot, formatFeePercent, formatPeriod, isJoinDeadlinePassed, isScheduledRecipient, netPotAfterFee } from "@/lib/circle-logic";
+import { useFeeConfig } from "@/hooks/useFeeConfig";
+import { CircleFlowViz } from "@/components/CircleFlowViz";
+import { MemberSeatGrid } from "@/components/MemberSeatGrid";
+import { AnimatedProgress } from "@/components/ui/AnimatedProgress";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface Props {
@@ -17,21 +22,35 @@ interface Props {
 }
 
 export function CircleDashboard({ circle, members, circleId }: Props) {
+  const feeBps = useFeeConfig();
   const pot = calculateRoundPot(
     members,
     circle.contribution_amount,
     circle.payout_order,
     circle.status === "Active" ? circle.current_round : 0
   );
+  const netPot = netPotAfterFee(pot, feeBps);
   const activeCount = members.filter((m) => !m.is_slashed && !m.is_exited_clean).length;
+  const joinCollateral =
+    circle.status === "Pending"
+      ? collateralForCircle(circle.contribution_amount, circle.max_members)
+      : BigInt(0);
+  const joinOpen =
+    circle.status === "Pending" &&
+    circle.join_deadline > BigInt(0) &&
+    !isJoinDeadlinePassed(circle.join_deadline);
   const progress =
     circle.total_rounds > 0
       ? Math.round((circle.current_round / circle.total_rounds) * 100)
       : 0;
+  const fillPct =
+    circle.max_members > 0
+      ? Math.round((circle.member_count / circle.max_members) * 100)
+      : 0;
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="stagger-item flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="section-label">Circle #{circleId}</p>
           <h1 className="mt-2 text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
@@ -42,7 +61,7 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
           </div>
         </div>
         {circle.status === "Active" && (
-          <div className="min-w-[120px] text-right">
+          <div className="stagger-item stagger-2 min-w-[120px] text-right">
             <p className="text-xs text-muted">Round</p>
             <p className="stat-value">
               {circle.current_round + 1}{" "}
@@ -54,52 +73,109 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
       </div>
 
       {circle.status === "Active" && (
-        <div className="space-y-2">
+        <div className="stagger-item stagger-2 space-y-2">
           <div className="flex justify-between text-xs text-muted">
-            <span>Progress</span>
+            <span>Circle progress</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-px bg-border">
-            <div
-              className="h-px bg-foreground transition-all duration-500"
-              style={{ width: `${Math.max(progress, 2)}%` }}
-            />
-          </div>
+          <AnimatedProgress value={progress} highlight />
         </div>
       )}
 
-      <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-        <Stat label="Members" value={`${circle.member_count} / ${circle.max_members}`} />
-        <Stat label="Round period" value={formatPeriod(circle.period_duration)} />
-        <Stat
-          label="This round's pot"
-          value={`${formatUsdc(pot)} USDC`}
-          sub={circle.status === "Active" ? `${activeCount} active` : undefined}
+      {circle.status === "Pending" && (
+        <div className="stagger-item stagger-2 space-y-3 rounded-md border border-border bg-muted-surface/40 p-4">
+          <div className="flex items-center justify-between text-xs text-muted">
+            <span>Seats filled</span>
+            <span>
+              {circle.member_count}/{circle.max_members}
+            </span>
+          </div>
+          <MemberSeatGrid filled={circle.member_count} total={circle.max_members} />
+          <AnimatedProgress value={fillPct} highlight />
+        </div>
+      )}
+
+      {circle.status === "Active" && members.length > 0 && (
+        <CircleFlowViz
+          members={members}
+          payoutOrder={circle.payout_order}
+          currentRound={circle.current_round}
+          netPot={netPot}
+          contributionAmount={circle.contribution_amount}
         />
+      )}
+
+      <div className="stagger-item stagger-3 grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+        <Stat label="Members" value={`${circle.member_count} / ${circle.max_members}`} delay={0} />
+        <Stat label="Round period" value={formatPeriod(circle.period_duration)} delay={1} />
+        {circle.status === "Pending" && (
+          <>
+            <Stat
+              label="Join deposit"
+              value={`${formatUsdc(joinCollateral)} USDC`}
+              sub="Collateral per member"
+              delay={2}
+            />
+            <Stat
+              label="Join by"
+              value={joinOpen ? timeRemaining(circle.join_deadline) : "Closed"}
+              delay={3}
+            />
+          </>
+        )}
+        {circle.status === "Active" && (
+          <Stat
+            label="This round's pot"
+            value={`${formatUsdc(netPot)} USDC`}
+            sub={`${activeCount} active · ${formatFeePercent(feeBps)} fee on release`}
+            delay={2}
+          />
+        )}
         {circle.min_trust_score != null && circle.min_trust_score > 0 && (
           <Stat
             label="Min. trust score"
             value={`${circle.min_trust_score} pts`}
             sub="Required to join"
+            delay={4}
           />
         )}
       </div>
 
-      <MemberList members={members} contributionAmount={circle.contribution_amount} />
+      <MemberList
+        members={members}
+        contributionAmount={circle.contribution_amount}
+        payoutOrder={circle.payout_order}
+        currentRound={circle.status === "Active" ? circle.current_round : 0}
+        isActive={circle.status === "Active"}
+      />
 
       <PayoutTracker
         payoutOrder={circle.payout_order}
         currentRound={circle.current_round}
         totalRounds={circle.total_rounds}
         status={circle.status}
+        feeBps={feeBps}
       />
     </div>
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({
+  label,
+  value,
+  sub,
+  delay = 0,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  delay?: number;
+}) {
   return (
-    <div className="bg-card p-4">
+    <div
+      className="stagger-item bg-card p-4"
+      style={{ animationDelay: `${0.1 + delay * 0.05}s` }}
+    >
       <p className="text-xs text-muted">{label}</p>
       <p className="stat-value mt-1">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-muted">{sub}</p>}
@@ -111,51 +187,83 @@ function memberLabel(address: string, index: number) {
   return `Member ${index + 1} · ${shortenAddress(address, 4)}`;
 }
 
+function paymentStatus(
+  entry: MemberDetail,
+  contributionAmount: bigint,
+  payoutOrder: string[],
+  currentRound: number,
+  isActive: boolean
+) {
+  if (entry.is_slashed) return { label: "Collateral forfeited", paid: false, slashed: true, receiving: false };
+  if (entry.is_exited_clean) return { label: "Prepaid · exited", paid: true, slashed: false, receiving: false };
+  if (isActive && isScheduledRecipient(entry.address, payoutOrder, currentRound)) {
+    return { label: "Receiving this round", paid: true, slashed: false, receiving: true };
+  }
+  if (entry.paid) return { label: "Paid this round", paid: true, slashed: false, receiving: false };
+  return { label: `Owes ${formatUsdc(contributionAmount)}`, paid: false, slashed: false, receiving: false };
+}
+
 function MemberList({
   members,
   contributionAmount,
+  payoutOrder,
+  currentRound,
+  isActive,
 }: {
   members: MemberDetail[];
   contributionAmount: bigint;
+  payoutOrder: string[];
+  currentRound: number;
+  isActive: boolean;
 }) {
   return (
-    <section>
+    <section className="stagger-item stagger-4">
       <h2 className="text-sm font-medium text-foreground">Members</h2>
       <ul className="mt-4 divide-y divide-border border-t border-border">
-        {members.map((entry, i) => (
-          <li
-            key={entry.address}
-            className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <span className="text-sm text-foreground">
-                {memberLabel(entry.address, i)}
-              </span>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {entry.is_slashed && <Badge>Slashed</Badge>}
-                {entry.has_received_payout && <Badge>Paid out</Badge>}
-                {entry.collateral_claimed && <Badge>Collateral claimed</Badge>}
+        {members.map((entry, i) => {
+          const status = paymentStatus(entry, contributionAmount, payoutOrder, currentRound, isActive);
+          return (
+            <li
+              key={entry.address}
+              className="stagger-item flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
+              style={{ animationDelay: `${0.15 + i * 0.06}s` }}
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                    status.slashed
+                      ? "bg-muted"
+                      : status.paid
+                        ? "bg-foreground"
+                        : "border border-muted bg-transparent"
+                  } ${status.paid && !status.slashed ? "animate-pulse-soft" : ""}`}
+                  aria-hidden
+                />
+                <div>
+                  <span className="text-sm text-foreground">
+                    {memberLabel(entry.address, i)}
+                  </span>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {entry.is_slashed && <Badge>Slashed</Badge>}
+                    {entry.is_exited_clean && <Badge>Exited</Badge>}
+                    {entry.has_received_payout && <Badge>Paid out</Badge>}
+                {status.receiving && <Badge>Recipient</Badge>}
+                    {entry.collateral_claimed && <Badge>Collateral claimed</Badge>}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="text-left text-sm sm:text-right">
-              {entry.is_slashed ? (
-                <p className="text-muted">Collateral forfeited</p>
-              ) : (
-                <p className={entry.paid ? "text-foreground" : "text-muted"}>
-                  {entry.paid
-                    ? "Paid this round"
-                    : `Owes ${formatUsdc(contributionAmount)}`}
+              <div className="pl-5 text-left text-sm sm:pl-0 sm:text-right">
+                <p className={status.paid ? "text-foreground" : "text-muted"}>{status.label}</p>
+                <p className="text-xs text-muted">
+                  Collateral {formatUsdc(entry.collateral_deposited)} USDC
                 </p>
-              )}
-              <p className="text-xs text-muted">
-                Collateral {formatUsdc(entry.collateral_deposited)} USDC
-              </p>
-            </div>
-          </li>
-        ))}
+              </div>
+            </li>
+          );
+        })}
         {members.length === 0 && (
           <li className="py-8 text-center text-sm text-muted">
-            No members yet — share the invite link
+            Waiting for the creator to enroll…
           </li>
         )}
       </ul>
@@ -176,20 +284,68 @@ function PayoutTracker({
   currentRound,
   totalRounds,
   status,
+  feeBps,
 }: {
   payoutOrder: string[];
   currentRound: number;
   totalRounds: number;
   status: string;
+  feeBps: number;
 }) {
+  if (payoutOrder.length === 0 && status === "Pending") {
+    return (
+      <section className="stagger-item stagger-5">
+        <h2 className="text-sm font-medium text-foreground">Payout order</h2>
+        <p className="mt-1 text-sm text-muted">
+          Shuffled on-chain when the last member joins
+        </p>
+      </section>
+    );
+  }
+
   return (
-    <section>
+    <section className="stagger-item stagger-5">
       <h2 className="text-sm font-medium text-foreground">Payout order</h2>
       <p className="mt-1 text-sm text-muted">
         {status === "Pending"
           ? "Payout order is shuffled on-chain when the last member joins"
-          : `Each member receives the full pot once across ${totalRounds} rounds`}
+          : `Each member receives the round pot once across ${totalRounds} rounds (${formatFeePercent(feeBps)} platform fee on release)`}
       </p>
+
+      {status === "Active" && payoutOrder.length > 1 && (
+        <div className="relative mt-6 hidden sm:block">
+          <div className="absolute left-0 right-0 top-3 h-px bg-border" />
+          <div className="relative flex justify-between">
+            {payoutOrder.map((addr, i) => {
+              const isCurrent = i === currentRound;
+              const isPast = i < currentRound;
+              return (
+                <div
+                  key={`timeline-${addr}-${i}`}
+                  className="flex flex-col items-center"
+                  style={{ width: `${100 / payoutOrder.length}%` }}
+                >
+                  <div
+                    className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-medium transition-all duration-300 ${
+                      isCurrent
+                        ? "border-foreground bg-foreground text-background payout-pill-current"
+                        : isPast
+                          ? "border-foreground/40 bg-card text-muted"
+                          : "border-border bg-card text-muted"
+                    }`}
+                  >
+                    {isPast ? "✓" : i + 1}
+                  </div>
+                  <p className="mt-2 max-w-[4rem] truncate font-mono text-[10px] text-muted">
+                    {shortenAddress(addr, 3)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex flex-wrap gap-2">
         {payoutOrder.map((addr, i) => {
           const isCurrent = i === currentRound;
@@ -197,13 +353,14 @@ function PayoutTracker({
           return (
             <div
               key={`${addr}-${i}`}
-              className={`rounded-md border px-3 py-1.5 font-mono text-xs ${
+              className={`stagger-item rounded-md border px-3 py-1.5 font-mono text-xs transition-all duration-300 ${
                 isCurrent
-                  ? "border-foreground text-foreground"
+                  ? "border-foreground text-foreground payout-pill-current"
                   : isPast
-                    ? "border-border text-muted line-through"
+                    ? "border-border text-muted line-through opacity-60"
                     : "border-border text-muted"
               }`}
+              style={{ animationDelay: `${0.2 + i * 0.05}s` }}
             >
               R{i + 1}: {shortenAddress(addr, 4)}
               {isCurrent && <span className="ml-1 text-muted">· now</span>}

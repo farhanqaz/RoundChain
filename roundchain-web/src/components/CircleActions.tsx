@@ -1,19 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useFeeConfig } from "@/hooks/useFeeConfig";
 import { TxResult } from "@/components/TxResult";
 import { SetupUsdcTrustline } from "@/components/SetupUsdcTrustline";
 import { Alert } from "@/components/ui/Alert";
 import {
   activeDefaulters,
-  allActivePaid,
+  allContributorsPaid,
   calculateRoundPot,
-  canRecipientClaimPayout,
+  canTriggerPayout,
+  canVoluntaryExit,
   isJoinDeadlinePassed,
   isPeriodEnded,
+  memberMustPayThisRound,
+  netPotAfterFee,
   remainingSettlementRounds,
   scheduledRecipient,
   timeRemaining,
+  formatFeePercent,
 } from "@/lib/circle-logic";
 import {
   buildCancelCircleOp,
@@ -24,6 +29,7 @@ import {
   buildJoinCircleOp,
   buildLeaveCircleOp,
   buildSlashDefaulterOp,
+  buildStartCircleOp,
   buildTriggerPayoutOp,
   collateralForCircle,
   formatUsdc,
@@ -55,7 +61,6 @@ interface Props {
   nextPayoutTime: bigint;
   minTrustScore?: number | null;
   userTrustScore?: number | null;
-  isCreator?: boolean;
   totalRounds?: number;
   joinDeadline?: bigint;
   hasReceivedPayout?: boolean;
@@ -83,7 +88,6 @@ export function CircleActions(props: Props) {
     nextPayoutTime,
     minTrustScore,
     userTrustScore,
-    isCreator = false,
     totalRounds = 0,
     joinDeadline = BigInt(0),
     hasReceivedPayout = false,
@@ -91,17 +95,36 @@ export function CircleActions(props: Props) {
     onSuccess,
   } = props;
 
+  const feeBps = useFeeConfig();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [showRiskExit, setShowRiskExit] = useState(false);
   const [usdcInfo, setUsdcInfo] = useState<Awaited<ReturnType<typeof getUsdcBalanceInfo>> | null>(null);
 
   const issuer = resolveUsdcIssuer(tokenId);
-  const defaulters = activeDefaulters(members);
-  const canLeave = status === "Pending" && isMember && !isSlashed && !isExitedClean;
-  const canExit = status === "Active" && isMember && !isSlashed && !isExitedClean && !hasReceivedPayout;
+  const defaulters = activeDefaulters(members, payoutOrder, currentRound);
+  const collateralRequired = collateralForCircle(contributionAmount, maxMembers);
+  const isFull = memberCount >= maxMembers;
+  const recipient = scheduledRecipient(payoutOrder, currentRound);
+  const isMyTurn = recipient === address;
+  const periodEnded = isPeriodEnded(nextPayoutTime);
+  const everyonePaid = allContributorsPaid(members, payoutOrder, currentRound);
+  const roundPot = calculateRoundPot(members, contributionAmount, payoutOrder, currentRound);
+  const netRoundPot = netPotAfterFee(roundPot, feeBps);
+  const joinClosed =
+    status === "Pending" && joinDeadline > BigInt(0) && isJoinDeadlinePassed(joinDeadline);
   const settlementRounds = remainingSettlementRounds(totalRounds, currentRound);
   const settlementAmount = contributionAmount * BigInt(settlementRounds);
+
+  const canLeave = status === "Pending" && isMember && !isSlashed && !joinClosed;
+  const canExit =
+    status === "Active" &&
+    isMember &&
+    !isSlashed &&
+    !isExitedClean &&
+    !hasReceivedPayout &&
+    canVoluntaryExit(hasContributed, nextPayoutTime);
   const canCompleteExit =
     status === "Active" &&
     isMember &&
@@ -110,19 +133,16 @@ export function CircleActions(props: Props) {
     hasReceivedPayout &&
     settlementRounds > 0;
   const canCancel =
-    status === "Pending" &&
-    memberCount > 0 &&
-    joinDeadline > BigInt(0) &&
-    isJoinDeadlinePassed(joinDeadline);
-  const canCancelEmpty = status === "Pending" && isCreator && memberCount === 0;
-  const collateralRequired = collateralForCircle(contributionAmount, maxMembers);
-  const isFull = memberCount >= maxMembers;
-  const recipient = scheduledRecipient(payoutOrder, currentRound);
-  const isMyTurn = recipient === address;
-  const periodEnded = isPeriodEnded(nextPayoutTime);
-  const everyonePaid = allActivePaid(members);
-  const roundPot = calculateRoundPot(members, contributionAmount, payoutOrder, currentRound);
+    status === "Pending" && memberCount > 0 && joinDeadline > BigInt(0) && joinClosed;
+  const canStartRecovery = status === "Pending" && isFull;
   const canSlash = status === "Active" && periodEnded && defaulters.length > 0;
+  const canReleasePayout = canTriggerPayout(
+    members,
+    payoutOrder,
+    currentRound,
+    nextPayoutTime,
+    status
+  );
 
   const refreshBalance = useCallback(() => {
     getUsdcBalanceInfo(address, tokenId).then(setUsdcInfo).catch(() => setUsdcInfo(null));
@@ -150,37 +170,62 @@ export function CircleActions(props: Props) {
 
   const usdcBalance = usdcInfo?.balance ?? null;
   const needsTrustline = usdcInfo?.needsTrustline ?? false;
-  const needsFunds = !needsTrustline && usdcBalance !== null && usdcBalance < contributionAmount;
-  const trustRequired =
-    minTrustScore != null && minTrustScore > 0 ? minTrustScore : null;
-  const trustBlocked =
-    trustRequired != null &&
-    userTrustScore != null &&
-    userTrustScore < trustRequired;
-  const canJoin =
-    status === "Pending" &&
-    !isMember &&
-    !isFull &&
-    !needsTrustline &&
-    !needsFunds &&
-    !trustBlocked;
-  const canContribute = status === "Active" && isMember && !isSlashed && !hasContributed && !needsTrustline && !needsFunds;
-  const canClaimCollateral = isCompleted && isMember && !isSlashed && !collateralClaimed;
-  const canClaimPayout = canRecipientClaimPayout(address, members, payoutOrder, currentRound, nextPayoutTime, status);
 
-  const primaryAction =
-    canClaimPayout ? "claim" :
-    canContribute ? "pay" :
-    canJoin ? "join" :
-    canClaimCollateral ? "collateral" :
-    null;
+  const wantsJoin = status === "Pending" && !isMember && !isFull && !joinClosed;
+  const isRecipientThisRound = memberMustPayThisRound(address, payoutOrder, currentRound) === false;
+  const wantsPay =
+    status === "Active" &&
+    isMember &&
+    !isSlashed &&
+    !isExitedClean &&
+    !hasContributed &&
+    !isRecipientThisRound;
+  const wantsCompleteExit = canCompleteExit;
+
+  const needsPayFunds =
+    wantsPay && usdcBalance !== null && usdcBalance < contributionAmount;
+  const needsSettlementFunds =
+    wantsCompleteExit && usdcBalance !== null && usdcBalance < settlementAmount;
+  const needsJoinFunds =
+    wantsJoin && usdcBalance !== null && usdcBalance < collateralRequired;
+
+  const needsFunds =
+    !needsTrustline && (needsJoinFunds || needsPayFunds || needsSettlementFunds);
+
+  const trustRequired = minTrustScore != null && minTrustScore > 0 ? minTrustScore : null;
+  const trustPending = trustRequired != null && userTrustScore == null;
+  const trustBlocked =
+    trustRequired != null && userTrustScore != null && userTrustScore < trustRequired;
+
+  const canJoin = wantsJoin && !needsTrustline && !needsJoinFunds && !trustBlocked && !trustPending;
+  const canContribute = wantsPay && !needsTrustline && !needsPayFunds;
+  const canCompleteExitNow = wantsCompleteExit && !needsTrustline && !needsSettlementFunds;
+  const canClaimCollateral = isCompleted && isMember && !isSlashed && !isExitedClean && !collateralClaimed;
+
+  const primaryAction = canReleasePayout
+    ? "release"
+    : canContribute
+      ? "pay"
+      : canJoin
+        ? "join"
+        : canClaimCollateral
+          ? "collateral"
+          : null;
+
+  const fundLabel = needsJoinFunds
+    ? `Need ${formatUsdc(collateralRequired)} USDC collateral`
+    : needsSettlementFunds && needsPayFunds
+      ? `Need ${formatUsdc(contributionAmount)} USDC to pay this round, or ${formatUsdc(settlementAmount)} USDC to settle all`
+      : needsSettlementFunds
+        ? `Need ${formatUsdc(settlementAmount)} USDC to settle exit`
+        : `Need ${formatUsdc(contributionAmount)} USDC`;
 
   return (
-    <div className="action-panel">
+    <div className="action-panel animate-scale-in">
       <div className="action-panel-header flex items-center justify-between">
         <div>
           <p className="font-medium text-foreground">Your actions</p>
-          <p className="text-xs text-muted">Approve each transaction in Freighter</p>
+          <p className="text-xs text-muted">Approve each step in Freighter</p>
         </div>
         {usdcBalance !== null && !needsTrustline && (
           <span className="text-xs text-muted">{formatUsdc(usdcBalance)} USDC</span>
@@ -193,7 +238,13 @@ export function CircleActions(props: Props) {
         )}
 
         {isExitedClean && (
-          <Alert variant="info">You completed exit — remaining rounds were prepaid.</Alert>
+          <Alert variant="info">You exited cleanly — remaining rounds were prepaid.</Alert>
+        )}
+
+        {joinClosed && status === "Pending" && (
+          <Alert variant="warning" title="Join window closed">
+            No new members. Anyone can cancel to refund existing members.
+          </Alert>
         )}
 
         {needsTrustline && (
@@ -201,36 +252,21 @@ export function CircleActions(props: Props) {
         )}
 
         {needsFunds && (
-          <FundWalletPanel
-            address={address}
-            minLabel={`Need ${formatUsdc(contributionAmount)} USDC`}
-          />
+          <FundWalletPanel address={address} minLabel={fundLabel} />
         )}
 
-        {status === "Pending" && !isMember && isFull && (
-          <Alert variant="info">This circle is full — it starts automatically when the last member joins.</Alert>
+        {trustPending && wantsJoin && (
+          <Alert variant="info">Checking trust score…</Alert>
+        )}
+
+        {trustBlocked && wantsJoin && (
+          <Alert variant="warning" title={`Trust score ${trustRequired}+ required`}>
+            Your score: {userTrustScore ?? 0} — complete circles for +10 each.
+          </Alert>
         )}
 
         {status === "Cancelled" && (
-          <Alert variant="warning">This circle was cancelled. Collateral has been refunded to members.</Alert>
-        )}
-
-        {status === "Pending" && !isMember && trustRequired != null && (
-          <Alert
-            variant={trustBlocked ? "warning" : "info"}
-            title={`Min. trust score: ${trustRequired}`}
-          >
-            {userTrustScore != null ? (
-              <>
-                Your score: <strong>{userTrustScore}</strong> pts
-                {trustBlocked
-                  ? " — complete circles to build reputation (+10 per clean completion)."
-                  : " — you meet the requirement."}
-              </>
-            ) : (
-              "Loading trust score…"
-            )}
-          </Alert>
+          <Alert variant="warning">Circle cancelled — collateral refunded to members.</Alert>
         )}
 
         {primaryAction === "join" && (
@@ -241,7 +277,7 @@ export function CircleActions(props: Props) {
           >
             {loading === "Join"
               ? "Processing…"
-              : `Join · ${formatUsdc(collateralRequired)} USDC collateral`}
+              : `Join · deposit ${formatUsdc(collateralRequired)} USDC`}
           </button>
         )}
 
@@ -251,31 +287,33 @@ export function CircleActions(props: Props) {
             onClick={() => run("Contribute", () => buildContributeOp(circleId, address))}
             className="btn-primary w-full py-3"
           >
-            {loading === "Pay"
-              ? "Processing…"
-              : `Pay ${formatUsdc(contributionAmount)} USDC`}
+            {loading === "Contribute" ? "Processing…" : `Pay ${formatUsdc(contributionAmount)} USDC`}
           </button>
         )}
 
-        {primaryAction === "claim" && (
-          <div className="space-y-4 border border-border p-4">
+        {primaryAction === "release" && (
+          <div className="space-y-3 border border-border p-4">
             <div>
-              <p className="font-medium text-foreground">Your payout turn</p>
+              <p className="font-medium text-foreground">
+                {isMyTurn ? "Your payout turn" : "Round ready to release"}
+              </p>
               <p className="mt-1 text-sm text-muted">
-                {periodEnded ? "Ready to claim to your wallet" : timeRemaining(nextPayoutTime)}
+                {isMyTurn
+                  ? `All members paid — release the pot to your wallet (${formatFeePercent(feeBps)} platform fee deducted)`
+                  : `Waiting on payout to ${recipient ? shortenAddress(recipient, 6) : "recipient"}`}
               </p>
             </div>
             {!everyonePaid && periodEnded && (
-              <p className="text-sm text-muted">Waiting for all members to contribute.</p>
+              <p className="text-sm text-muted">Waiting for all contributors to pay this round.</p>
             )}
             <button
-              disabled={!!loading || !canClaimPayout}
+              disabled={!!loading || !canReleasePayout}
               onClick={() => run("Payout", () => buildTriggerPayoutOp(circleId))}
               className="btn-primary w-full py-3"
             >
               {loading === "Payout"
                 ? "Processing…"
-                : `Release ${formatUsdc(roundPot)} USDC`}
+                : `Release ${formatUsdc(netRoundPot)} USDC`}
             </button>
           </div>
         )}
@@ -290,9 +328,16 @@ export function CircleActions(props: Props) {
           </button>
         )}
 
-        {status === "Active" && isMember && hasContributed && !isMyTurn && recipient && (
+        {status === "Active" && isMember && isRecipientThisRound && !canReleasePayout && (
           <p className="text-sm text-muted">
-            Round paid. Next payout:{" "}
+            Your payout turn — waiting for others to pay this round.
+            {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
+          </p>
+        )}
+
+        {status === "Active" && isMember && hasContributed && !canReleasePayout && recipient && !isRecipientThisRound && (
+          <p className="text-sm text-muted">
+            Round paid · next:{" "}
             <span className="font-mono text-foreground">{shortenAddress(recipient, 6)}</span>
             {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
           </p>
@@ -300,9 +345,19 @@ export function CircleActions(props: Props) {
 
         {status === "Pending" && isMember && !isFull && (
           <p className="text-sm text-muted">
-            Joined — waiting for {maxMembers - memberCount} more member{maxMembers - memberCount !== 1 ? "s" : ""}.
-            The circle starts automatically when full.
+            Waiting for {maxMembers - memberCount} more member
+            {maxMembers - memberCount !== 1 ? "s" : ""} — starts automatically when full.
           </p>
+        )}
+
+        {canStartRecovery && (
+          <button
+            disabled={!!loading}
+            onClick={() => run("Start", () => buildStartCircleOp(circleId))}
+            className="btn-secondary w-full py-3"
+          >
+            {loading === "Start" ? "Processing…" : "Start circle (recovery)"}
+          </button>
         )}
 
         {canLeave && (
@@ -311,55 +366,65 @@ export function CircleActions(props: Props) {
             onClick={() => run("Leave", () => buildLeaveCircleOp(circleId, address))}
             className="btn-secondary w-full py-3"
           >
-            {loading === "Leave" ? "Processing…" : "Leave circle · full collateral refund"}
+            {loading === "Leave" ? "Processing…" : "Leave · full refund"}
           </button>
         )}
 
         {canCompleteExit && (
           <div className="space-y-2 border border-border p-4">
             <p className="text-sm text-muted">
-              Settle {settlementRounds} remaining round{settlementRounds !== 1 ? "s" : ""} (
-              {formatUsdc(settlementAmount)} USDC) and exit cleanly. Others keep full pots.
+              Done after your payout? Settle {settlementRounds} round
+              {settlementRounds !== 1 ? "s" : ""} ({formatUsdc(settlementAmount)} USDC) and get
+              your collateral back. Trust +10 applies when the circle completes.
             </p>
             <button
-              disabled={!!loading}
+              disabled={!!loading || !canCompleteExitNow}
               onClick={() => run("Complete exit", () => buildCompleteExitOp(circleId, address))}
               className="btn-secondary w-full py-3"
             >
-              {loading === "Complete exit" ? "Processing…" : "Complete exit · settle & leave"}
+              {loading === "Complete exit" ? "Processing…" : "Settle & exit"}
             </button>
           </div>
         )}
 
-        {canExit && (
-          <div className="space-y-2 border border-border p-4">
+        {canExit && !showRiskExit && (
+          <button
+            type="button"
+            onClick={() => setShowRiskExit(true)}
+            className="text-xs text-muted underline underline-offset-2"
+          >
+            Leave before your payout (forfeits collateral)
+          </button>
+        )}
+
+        {canExit && showRiskExit && (
+          <div className="space-y-2 border border-red-200 p-4 dark:border-red-900">
             <p className="text-sm text-muted">
-              Exit forfeits collateral ({formatUsdc(collateralRequired)} USDC) and applies an
-              immediate trust penalty. Only after the round period ends.
+              Forfeits {formatUsdc(collateralRequired)} USDC collateral and lowers trust score.
             </p>
             <button
               disabled={!!loading}
               onClick={() => run("Exit", () => buildExitCircleOp(circleId, address))}
-              className="btn-danger w-full py-3"
+              className="btn-danger w-full py-2 text-sm"
             >
-              {loading === "Exit" ? "Processing…" : "Exit circle"}
+              {loading === "Exit" ? "Processing…" : "Confirm early exit"}
             </button>
           </div>
         )}
 
-        {(canCancel || canCancelEmpty) && (
+        {canCancel && (
           <button
             disabled={!!loading}
             onClick={() => run("Cancel", () => buildCancelCircleOp(circleId, address))}
             className="btn-danger w-full py-3"
           >
-            {loading === "Cancel" ? "Processing…" : "Cancel circle · refund all members"}
+            {loading === "Cancel" ? "Processing…" : "Cancel circle · refund all"}
           </button>
         )}
 
         {canSlash && (
           <div className="space-y-2 border-t border-border pt-4">
-            <p className="text-xs font-medium text-foreground">Slash late members</p>
+            <p className="text-xs font-medium text-foreground">Slash non-payers</p>
             {defaulters.map((d) => (
               <button
                 key={d.address}
@@ -373,12 +438,8 @@ export function CircleActions(props: Props) {
           </div>
         )}
 
-        {!primaryAction && status === "Pending" && isMember && isFull && (
-          <p className="text-sm text-muted">Circle is full — starting on-chain…</p>
-        )}
-
-        {!primaryAction && status === "Active" && isMember && hasContributed && isMyTurn && !canClaimPayout && (
-          <p className="text-sm text-muted">Round paid · waiting for payout window</p>
+        {!primaryAction && status === "Active" && isMember && hasContributed && isMyTurn && !canReleasePayout && (
+          <p className="text-sm text-muted">Paid · {timeRemaining(nextPayoutTime)}</p>
         )}
 
         {error && <Alert variant="error">{error}</Alert>}

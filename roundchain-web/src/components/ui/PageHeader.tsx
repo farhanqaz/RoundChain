@@ -21,7 +21,7 @@ export function PageHeader({
   action,
 }: Props) {
   return (
-    <header className="space-y-4 border-b border-border pb-8">
+    <header className="animate-fade-up space-y-4 border-b border-border pb-8">
       {backHref && (
         <Link
           href={backHref}

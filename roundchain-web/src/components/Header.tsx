@@ -28,6 +28,9 @@ export function Header() {
           <Link href="/create" className="nav-link">
             Create
           </Link>
+          <Link href="/demo" className="nav-link">
+            Sandbox
+          </Link>
           <Link href="/about" className="nav-link">
             About
           </Link>

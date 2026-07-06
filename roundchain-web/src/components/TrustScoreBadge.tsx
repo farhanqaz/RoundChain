@@ -18,14 +18,12 @@ export function TrustScoreBadge({ address, compact }: Props) {
   }, [address]);
 
   if (!trust) {
-    return (
-      <span className="hidden h-5 w-12 animate-shimmer rounded lg:inline-block" />
-    );
+    return <span className="text-xs text-muted">…</span>;
   }
 
   if (compact) {
     return (
-      <span className="hidden text-xs text-muted lg:inline" title="On-chain trust score">
+      <span className="text-xs text-muted" title="On-chain trust score">
         {trust.score} pts
       </span>
     );
@@ -33,7 +31,7 @@ export function TrustScoreBadge({ address, compact }: Props) {
 
   return (
     <span
-      className="hidden text-xs text-muted lg:inline"
+      className="text-xs text-muted"
       title={`${trust.circles_completed} completed · ${trust.circles_defaulted} defaulted`}
     >
       {trust.score} trust

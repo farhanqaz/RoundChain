@@ -12,6 +12,8 @@ import { Alert } from "@/components/ui/Alert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useWallet } from "@/providers/WalletProvider";
 import { useCircle } from "@/hooks/useCircle";
+import { isJoinDeadlinePassed } from "@/lib/circle-logic";
+import { PageShell } from "@/components/PageShell";
 
 export default function CirclePage() {
   const params = useParams();
@@ -36,7 +38,7 @@ export default function CirclePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <PageShell className="space-y-8">
       {error && (
         <Alert variant="error">
           {error}{" "}
@@ -58,21 +60,17 @@ export default function CirclePage() {
             <p className="-mt-4 text-xs text-muted">Refreshing…</p>
           )}
 
-          {data.isCreator && !data.isMember && circle.status === "Pending" && (
-            <Alert variant="warning" title="Join as a member">
-              You created this circle but are not enrolled yet.{" "}
-              <Link href={`/join/${circleId}`} className="underline">Join the circle</Link>{" "}
-              — your slot counts toward {circle.max_members} members.
-            </Alert>
-          )}
-
           <CircleDashboard circle={circle} members={data.members} circleId={circleId} />
-          <ShareCircle circleId={circleId} />
+          {circle.status === "Pending" &&
+            circle.member_count < circle.max_members &&
+            !(circle.join_deadline > BigInt(0) && isJoinDeadlinePassed(circle.join_deadline)) && (
+              <ShareCircle circleId={circleId} />
+            )}
 
           {!address && (
             <ConnectWallet
               title="Wallet required"
-              description="Connect Freighter to join or submit transactions."
+              description="Connect Freighter to pay, release payouts, or manage your membership."
             />
           )}
 
@@ -96,7 +94,6 @@ export default function CirclePage() {
               nextPayoutTime={circle.next_payout_time}
               minTrustScore={circle.min_trust_score}
               userTrustScore={data.trustScore?.score ?? null}
-              isCreator={data.isCreator}
               totalRounds={circle.total_rounds}
               joinDeadline={circle.join_deadline}
               hasReceivedPayout={data.hasReceivedPayout}
@@ -106,6 +103,6 @@ export default function CirclePage() {
           )}
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

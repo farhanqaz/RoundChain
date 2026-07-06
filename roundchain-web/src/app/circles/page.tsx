@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CircleSkeleton } from "@/components/CircleSkeleton";
+import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { AnimatedProgress } from "@/components/ui/AnimatedProgress";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { IconArrowRight, IconUsers } from "@/components/icons";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -30,7 +32,7 @@ export default function CirclesPage() {
   if (loading) return <CircleSkeleton />;
 
   return (
-    <div className="space-y-8">
+    <PageShell className="space-y-8">
       <PageHeader
         label="Circles"
         title="Browse circles"
@@ -49,25 +51,26 @@ export default function CirclesPage() {
         <EmptyState
           icon={<IconUsers className="h-7 w-7" />}
           title="No circles yet"
-          description="Create the first circle and invite members with a share link."
+          description="Create the first circle — you're enrolled automatically — then invite others with a share link."
           action={{ label: "Create circle", href: "/create" }}
           secondary={{ label: "Try the sandbox", href: "/demo" }}
         />
       )}
 
       <ul className="space-y-3">
-        {circles.map(({ id, circle }) => {
+        {circles.map(({ id, circle }, index) => {
           const open = circle.status === "Pending" && circle.member_count < circle.max_members;
           const fillPct = Math.round((circle.member_count / circle.max_members) * 100);
+          const stagger = Math.min(index + 1, 8);
           return (
-            <li key={id}>
+            <li key={id} className={`stagger-item stagger-${stagger}`}>
               <Link
                 href={open ? `/join/${id}` : `/circle/${id}`}
                 className="card-hover group flex flex-col gap-4 p-5 sm:flex-row sm:items-center"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-foreground group-hover:underline">
+                    <p className="font-medium text-foreground transition group-hover:underline">
                       Circle #{id}
                     </p>
                     {open && <span className="pill-emerald">Open</span>}
@@ -79,9 +82,7 @@ export default function CirclesPage() {
                     {formatUsdc(circle.contribution_amount)} USDC · {formatPeriod(circle.period_duration)}
                   </p>
                   <div className="mt-3 flex items-center gap-3">
-                    <div className="h-px max-w-[140px] flex-1 bg-border">
-                      <div className="h-px bg-foreground" style={{ width: `${fillPct}%` }} />
-                    </div>
+                    <AnimatedProgress value={fillPct} className="max-w-[140px] flex-1" highlight />
                     <span className="text-xs text-muted">
                       {circle.member_count}/{circle.max_members}
                     </span>
@@ -93,6 +94,6 @@ export default function CirclesPage() {
           );
         })}
       </ul>
-    </div>
+    </PageShell>
   );
 }

@@ -24,6 +24,7 @@ export const DEMO_PERIOD_SECONDS = 60;
 export const DEMO_CONTRIBUTION = 1_000_000; // 0.1 USDC
 
 export const DEFAULT_JOIN_WINDOW_DAYS = 30;
+export const PLATFORM_FEE_BPS = 100; // 1% on each payout
 
 export function defaultJoinDeadline(): bigint {
   return BigInt(Math.floor(Date.now() / 1000) + DEFAULT_JOIN_WINDOW_DAYS * 86400);
