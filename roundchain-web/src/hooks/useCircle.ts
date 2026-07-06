@@ -22,6 +22,8 @@ export interface CircleView {
   isSlashed: boolean;
   hasContributed: boolean;
   collateralClaimed: boolean;
+  hasReceivedPayout: boolean;
+  isExitedClean: boolean;
   trustScore: TrustScore | null;
 }
 
@@ -50,6 +52,8 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
         let hasContributed = false;
         let collateralClaimed = false;
         let isSlashed = false;
+        let hasReceivedPayout = false;
+        let isExitedClean = false;
         let trustScore: TrustScore | null = null;
 
         if (address) {
@@ -64,6 +68,8 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
             hasContributed = member.contributions_paid > round;
             collateralClaimed = member.collateral_claimed;
             isSlashed = member.is_slashed;
+            hasReceivedPayout = member.has_received_payout;
+            isExitedClean = member.is_exited_clean;
           }
         }
 
@@ -78,6 +84,8 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
           isSlashed,
           hasContributed,
           collateralClaimed,
+          hasReceivedPayout,
+          isExitedClean,
           trustScore,
         });
         setError(null);

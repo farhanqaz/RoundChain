@@ -11,9 +11,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { FormField } from "@/components/ui/FormField";
 import { Alert } from "@/components/ui/Alert";
 import { useWallet } from "@/providers/WalletProvider";
-import { DEFAULT_CONTRIBUTION, DEFAULT_PERIOD, USDC_TOKEN } from "@/lib/constants";
+import { DEFAULT_CONTRIBUTION, DEFAULT_JOIN_WINDOW_DAYS, DEFAULT_PERIOD, USDC_TOKEN } from "@/lib/constants";
 import {
   buildCreateCircleOp,
+  collateralForCircle,
   formatUsdc,
   getNextCircleId,
   getUsdcBalanceInfo,
@@ -28,6 +29,7 @@ export default function CreateCirclePage() {
   const [contribution, setContribution] = useState(String(DEFAULT_CONTRIBUTION / 10_000_000));
   const [periodDays, setPeriodDays] = useState(String(DEFAULT_PERIOD / 86400));
   const [maxMembers, setMaxMembers] = useState("5");
+  const [joinDays, setJoinDays] = useState(String(DEFAULT_JOIN_WINDOW_DAYS));
   const [minTrustScore, setMinTrustScore] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,9 @@ export default function CreateCirclePage() {
   const [usdcOk, setUsdcOk] = useState(false);
 
   const contributionAmount = BigInt(Math.floor(parseFloat(contribution || "0") * 10_000_000));
-  const potEstimate = (parseFloat(contribution || "0") * parseInt(maxMembers || "0", 10)).toFixed(2);
+  const memberCount = parseInt(maxMembers || "5", 10);
+  const collateralAmount = collateralForCircle(contributionAmount, memberCount);
+  const potEstimate = (parseFloat(contribution || "0") * Math.max(0, memberCount - 1)).toFixed(2);
 
   const refreshWallet = useCallback(async () => {
     if (!address) return;
@@ -65,6 +69,12 @@ export default function CreateCirclePage() {
     if (contributionAmount <= BigInt(0)) return setError("Contribution must be greater than 0");
     if (members < 2) return setError("At least 2 members required");
     if (periodDuration < BigInt(86400)) return setError("Period must be at least 1 day");
+    const joinDaysNum = parseInt(joinDays, 10);
+    if (joinDaysNum < 1) return setError("Join window must be at least 1 day");
+
+    const joinDeadline = BigInt(
+      Math.floor(Date.now() / 1000) + joinDaysNum * 86400
+    );
 
     setLoading(true);
     setError(null);
@@ -86,7 +96,7 @@ export default function CreateCirclePage() {
         minTrustScore: minTrustScore.trim()
           ? parseInt(minTrustScore, 10)
           : null,
-        joinDeadline: null,
+        joinDeadline,
       });
 
       const { hash, returnValue } = await simulateAndSend(address, signWithFreighter, op);
@@ -205,6 +215,16 @@ export default function CreateCirclePage() {
                 />
               </FormField>
 
+              <FormField label="Join window (days)" hint="Refundable cancel if not full by deadline">
+                <input
+                  type="number"
+                  min={1}
+                  value={joinDays}
+                  onChange={(e) => setJoinDays(e.target.value)}
+                  className="input"
+                />
+              </FormField>
+
               <FormField
                 label="Min. trust score (optional)"
                 hint="New members need this on-chain reputation to join. Leave empty for open access. +10 per clean completion."
@@ -239,6 +259,10 @@ export default function CreateCirclePage() {
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Members</dt>
                   <dd className="font-medium text-foreground">{maxMembers}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Collateral / member</dt>
+                  <dd className="font-medium text-foreground">{formatUsdc(collateralAmount)} USDC</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Pot / round</dt>

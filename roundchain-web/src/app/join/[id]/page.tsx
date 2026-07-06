@@ -87,6 +87,8 @@ export default function JoinCirclePage() {
               nextPayoutTime={circle.next_payout_time}
               minTrustScore={circle.min_trust_score}
               userTrustScore={data.trustScore?.score ?? null}
+              totalRounds={circle.total_rounds}
+              joinDeadline={circle.join_deadline}
               onSuccess={() => refresh(true)}
             />
           )}

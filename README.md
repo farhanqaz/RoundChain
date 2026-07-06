@@ -89,8 +89,8 @@ score = max(0, completed × 10 − defaulted × 25)
 
 | | |
 |---|---|
-| **Contract** | `CAMYAUF6SQJ5HFHHZVSGUZGPEYLS2YEFISWGB6ZGCLF5SNGL4BPQ2QX4` |
-| **Explorer** | [stellar.expert/explorer/testnet/contract/…](https://stellar.expert/explorer/testnet/contract/CAMYAUF6SQJ5HFHHZVSGUZGPEYLS2YEFISWGB6ZGCLF5SNGL4BPQ2QX4) |
+| **Contract** | `CCAXJYS7UXTDZW72VJXSYOSG7PEHVSQDN7MBBGWG7R3A4EWJ2EN2BXNG` |
+| **Explorer** | [stellar.expert/explorer/testnet/contract/…](https://stellar.expert/explorer/testnet/contract/CCAXJYS7UXTDZW72VJXSYOSG7PEHVSQDN7MBBGWG7R3A4EWJ2EN2BXNG) |
 | **USDC (Circle SAC)** | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 | **Network** | Stellar Testnet |
 
@@ -106,7 +106,7 @@ roundchain-web/            Next.js 14 application
   src/components/          Circle dashboard, wallet UI, member actions
 ```
 
-Contract test suite: **25 passing tests** covering auto-start, leave/cancel/exit, payout hardening, slashing, and trust gating.
+Contract test suite: **11 passing tests** covering fair exit, collateral scaling, cancel rules, and payout hardening.
 
 Web client: **38 unit tests** (Vitest) for trust scoring, circle logic, error parsing, and contract data normalization.
 

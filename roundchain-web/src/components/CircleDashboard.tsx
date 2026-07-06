@@ -17,8 +17,13 @@ interface Props {
 }
 
 export function CircleDashboard({ circle, members, circleId }: Props) {
-  const pot = calculateRoundPot(members, circle.contribution_amount);
-  const activeCount = members.filter((m) => !m.is_slashed).length;
+  const pot = calculateRoundPot(
+    members,
+    circle.contribution_amount,
+    circle.payout_order,
+    circle.status === "Active" ? circle.current_round : 0
+  );
+  const activeCount = members.filter((m) => !m.is_slashed && !m.is_exited_clean).length;
   const progress =
     circle.total_rounds > 0
       ? Math.round((circle.current_round / circle.total_rounds) * 100)

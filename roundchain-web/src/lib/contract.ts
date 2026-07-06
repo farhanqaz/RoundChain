@@ -41,7 +41,8 @@ export interface CircleState {
   next_payout_time: bigint;
   min_trust_score: number | null;
   created_at: bigint;
-  join_deadline: bigint | null;
+  join_deadline: bigint;
+  activated_at: bigint;
   /** @deprecated use creator */
   admin: string;
 }
@@ -60,6 +61,10 @@ export interface MemberState {
   has_received_payout: boolean;
   is_slashed: boolean;
   collateral_claimed: boolean;
+  is_exited_clean: boolean;
+  prepaid_rounds: number;
+  exit_at_round: number;
+  trust_settled: boolean;
 }
 
 export interface ContributionEntry {
@@ -72,6 +77,7 @@ export interface MemberDetail extends ContributionEntry {
   is_slashed: boolean;
   has_received_payout: boolean;
   collateral_claimed: boolean;
+  is_exited_clean: boolean;
 }
 
 export interface TxResult {
@@ -155,17 +161,6 @@ function parseOptionalU32(raw: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function parseOptionalU64(raw: unknown): bigint | null {
-  if (raw === null || raw === undefined) return null;
-  if (typeof raw === "object" && raw !== null) {
-    if ("tag" in raw && (raw as { tag: string }).tag === "None") return null;
-    if ("Some" in raw) return toBigInt((raw as { Some: unknown }).Some);
-  }
-  if (Array.isArray(raw) && raw.length === 0) return null;
-  const n = toBigInt(raw);
-  return n === BigInt(0) && raw === null ? null : n;
-}
-
 export function normalizeCircle(raw: Record<string, unknown>): CircleState {
   const payoutRaw = raw.payout_order;
   const payout_order = Array.isArray(payoutRaw)
@@ -189,7 +184,8 @@ export function normalizeCircle(raw: Record<string, unknown>): CircleState {
     next_payout_time: toBigInt(raw.next_payout_time),
     min_trust_score: parseOptionalU32(raw.min_trust_score),
     created_at: toBigInt(raw.created_at),
-    join_deadline: parseOptionalU64(raw.join_deadline),
+    join_deadline: toBigInt(raw.join_deadline ?? 0),
+    activated_at: toBigInt(raw.activated_at ?? 0),
   };
 }
 
@@ -210,7 +206,17 @@ export function normalizeMember(raw: Record<string, unknown>): MemberState {
     has_received_payout: Boolean(raw.has_received_payout),
     is_slashed: Boolean(raw.is_slashed),
     collateral_claimed: Boolean(raw.collateral_claimed),
+    is_exited_clean: Boolean(raw.is_exited_clean),
+    prepaid_rounds: Number(raw.prepaid_rounds ?? 0),
+    exit_at_round: Number(raw.exit_at_round ?? 0),
+    trust_settled: Boolean(raw.trust_settled),
   };
+}
+
+/** Collateral locked at join: (max_members - 1) × contribution */
+export function collateralForCircle(contribution: bigint, maxMembers: number): bigint {
+  if (maxMembers < 2) return contribution;
+  return contribution * BigInt(maxMembers - 1);
 }
 
 const DUMMY_ACCOUNT =
@@ -430,6 +436,7 @@ export async function getMemberDetails(
         is_slashed: false,
         has_received_payout: false,
         collateral_claimed: false,
+        is_exited_clean: false,
       });
     }
   }
@@ -490,6 +497,14 @@ export function buildContributeOp(circleId: number, member: string) {
 export function buildLeaveCircleOp(circleId: number, member: string) {
   return contract().call(
     "leave_circle",
+    nativeToScVal(circleId, { type: "u32" }),
+    addressScVal(member)
+  );
+}
+
+export function buildCompleteExitOp(circleId: number, member: string) {
+  return contract().call(
+    "complete_exit",
     nativeToScVal(circleId, { type: "u32" }),
     addressScVal(member)
   );

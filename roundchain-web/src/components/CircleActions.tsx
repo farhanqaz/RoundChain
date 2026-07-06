@@ -9,7 +9,9 @@ import {
   allActivePaid,
   calculateRoundPot,
   canRecipientClaimPayout,
+  isJoinDeadlinePassed,
   isPeriodEnded,
+  remainingSettlementRounds,
   scheduledRecipient,
   timeRemaining,
 } from "@/lib/circle-logic";
@@ -17,11 +19,13 @@ import {
   buildCancelCircleOp,
   buildClaimCollateralOp,
   buildContributeOp,
+  buildCompleteExitOp,
   buildExitCircleOp,
   buildJoinCircleOp,
   buildLeaveCircleOp,
   buildSlashDefaulterOp,
   buildTriggerPayoutOp,
+  collateralForCircle,
   formatUsdc,
   getUsdcBalanceInfo,
   MemberDetail,
@@ -52,6 +56,10 @@ interface Props {
   minTrustScore?: number | null;
   userTrustScore?: number | null;
   isCreator?: boolean;
+  totalRounds?: number;
+  joinDeadline?: bigint;
+  hasReceivedPayout?: boolean;
+  isExitedClean?: boolean;
   onSuccess: () => void;
 }
 
@@ -76,6 +84,10 @@ export function CircleActions(props: Props) {
     minTrustScore,
     userTrustScore,
     isCreator = false,
+    totalRounds = 0,
+    joinDeadline = BigInt(0),
+    hasReceivedPayout = false,
+    isExitedClean = false,
     onSuccess,
   } = props;
 
@@ -86,15 +98,30 @@ export function CircleActions(props: Props) {
 
   const issuer = resolveUsdcIssuer(tokenId);
   const defaulters = activeDefaulters(members);
-  const canLeave = status === "Pending" && isMember && !isSlashed;
-  const canExit = status === "Active" && isMember && !isSlashed;
-  const canCancel = status === "Pending" && isCreator && memberCount > 0;
+  const canLeave = status === "Pending" && isMember && !isSlashed && !isExitedClean;
+  const canExit = status === "Active" && isMember && !isSlashed && !isExitedClean && !hasReceivedPayout;
+  const settlementRounds = remainingSettlementRounds(totalRounds, currentRound);
+  const settlementAmount = contributionAmount * BigInt(settlementRounds);
+  const canCompleteExit =
+    status === "Active" &&
+    isMember &&
+    !isSlashed &&
+    !isExitedClean &&
+    hasReceivedPayout &&
+    settlementRounds > 0;
+  const canCancel =
+    status === "Pending" &&
+    memberCount > 0 &&
+    joinDeadline > BigInt(0) &&
+    isJoinDeadlinePassed(joinDeadline);
+  const canCancelEmpty = status === "Pending" && isCreator && memberCount === 0;
+  const collateralRequired = collateralForCircle(contributionAmount, maxMembers);
   const isFull = memberCount >= maxMembers;
   const recipient = scheduledRecipient(payoutOrder, currentRound);
   const isMyTurn = recipient === address;
   const periodEnded = isPeriodEnded(nextPayoutTime);
   const everyonePaid = allActivePaid(members);
-  const roundPot = calculateRoundPot(members, contributionAmount);
+  const roundPot = calculateRoundPot(members, contributionAmount, payoutOrder, currentRound);
   const canSlash = status === "Active" && periodEnded && defaulters.length > 0;
 
   const refreshBalance = useCallback(() => {
@@ -165,6 +192,10 @@ export function CircleActions(props: Props) {
           <Alert variant="error">Your collateral was slashed for missing a contribution.</Alert>
         )}
 
+        {isExitedClean && (
+          <Alert variant="info">You completed exit — remaining rounds were prepaid.</Alert>
+        )}
+
         {needsTrustline && (
           <SetupUsdcTrustline address={address} issuer={issuer} onSuccess={refreshBalance} />
         )}
@@ -210,7 +241,7 @@ export function CircleActions(props: Props) {
           >
             {loading === "Join"
               ? "Processing…"
-              : `Join · ${formatUsdc(contributionAmount)} USDC collateral`}
+              : `Join · ${formatUsdc(collateralRequired)} USDC collateral`}
           </button>
         )}
 
@@ -284,10 +315,27 @@ export function CircleActions(props: Props) {
           </button>
         )}
 
+        {canCompleteExit && (
+          <div className="space-y-2 border border-border p-4">
+            <p className="text-sm text-muted">
+              Settle {settlementRounds} remaining round{settlementRounds !== 1 ? "s" : ""} (
+              {formatUsdc(settlementAmount)} USDC) and exit cleanly. Others keep full pots.
+            </p>
+            <button
+              disabled={!!loading}
+              onClick={() => run("Complete exit", () => buildCompleteExitOp(circleId, address))}
+              className="btn-secondary w-full py-3"
+            >
+              {loading === "Complete exit" ? "Processing…" : "Complete exit · settle & leave"}
+            </button>
+          </div>
+        )}
+
         {canExit && (
           <div className="space-y-2 border border-border p-4">
             <p className="text-sm text-muted">
-              Exit forfeits your collateral and counts as a default on your trust score.
+              Exit forfeits collateral ({formatUsdc(collateralRequired)} USDC) and applies an
+              immediate trust penalty. Only after the round period ends.
             </p>
             <button
               disabled={!!loading}
@@ -299,7 +347,7 @@ export function CircleActions(props: Props) {
           </div>
         )}
 
-        {canCancel && (
+        {(canCancel || canCancelEmpty) && (
           <button
             disabled={!!loading}
             onClick={() => run("Cancel", () => buildCancelCircleOp(circleId, address))}

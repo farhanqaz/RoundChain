@@ -30,4 +30,11 @@ pub enum RoundChainError {
     JoinDeadlinePassed = 24,
     NotMember = 25,
     CannotCancel = 26,
+    InvalidToken = 27,
+    CannotExitEarly = 28,
+    UseCompleteExit = 29,
+    MemberExited = 30,
+    AlreadyInitialized = 31,
+    NotInitialized = 32,
+    NoPayoutReceived = 33,
 }

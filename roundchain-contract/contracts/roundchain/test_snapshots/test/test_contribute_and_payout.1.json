@@ -26,6 +26,7 @@
       ]
     ],
     [],
+    [],
     [
       [
         "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
@@ -51,7 +52,9 @@
                   "u32": 3
                 },
                 "void",
-                "void"
+                {
+                  "u64": "2592000"
+                }
               ]
             }
           },
@@ -72,7 +75,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
                 },
                 {
-                  "i128": "50000000"
+                  "i128": "90000000"
                 }
               ]
             }
@@ -113,7 +116,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                     },
                     {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   ]
                 }
@@ -137,7 +140,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 },
                 {
-                  "i128": "50000000"
+                  "i128": "90000000"
                 }
               ]
             }
@@ -178,7 +181,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                     },
                     {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   ]
                 }
@@ -202,7 +205,7 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                 },
                 {
-                  "i128": "50000000"
+                  "i128": "90000000"
                 }
               ]
             }
@@ -243,7 +246,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                     },
                     {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   ]
                 }
@@ -384,8 +387,6 @@
         }
       ]
     ],
-    [],
-    [],
     [],
     [],
     [],
@@ -544,6 +545,14 @@
                 "map": [
                   {
                     "key": {
+                      "symbol": "activated_at"
+                    },
+                    "val": {
+                      "u64": "0"
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "contribution_amount"
                     },
                     "val": {
@@ -578,7 +587,9 @@
                     "key": {
                       "symbol": "join_deadline"
                     },
-                    "val": "void"
+                    "val": {
+                      "u64": "2592000"
+                    }
                   },
                   {
                     "key": {
@@ -607,7 +618,7 @@
                       "symbol": "next_payout_time"
                     },
                     "val": {
-                      "u64": "1209601"
+                      "u64": "1209600"
                     }
                   },
                   {
@@ -716,7 +727,7 @@
                       "symbol": "collateral_deposited"
                     },
                     "val": {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   },
                   {
@@ -729,6 +740,14 @@
                   },
                   {
                     "key": {
+                      "symbol": "exit_at_round"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "has_received_payout"
                     },
                     "val": {
@@ -737,7 +756,31 @@
                   },
                   {
                     "key": {
+                      "symbol": "is_exited_clean"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "is_slashed"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "prepaid_rounds"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "trust_settled"
                     },
                     "val": {
                       "bool": false
@@ -795,7 +838,7 @@
                       "symbol": "collateral_deposited"
                     },
                     "val": {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   },
                   {
@@ -808,6 +851,14 @@
                   },
                   {
                     "key": {
+                      "symbol": "exit_at_round"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "has_received_payout"
                     },
                     "val": {
@@ -816,7 +867,31 @@
                   },
                   {
                     "key": {
+                      "symbol": "is_exited_clean"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "is_slashed"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "prepaid_rounds"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "trust_settled"
                     },
                     "val": {
                       "bool": false
@@ -874,7 +949,7 @@
                       "symbol": "collateral_deposited"
                     },
                     "val": {
-                      "i128": "10000000"
+                      "i128": "20000000"
                     }
                   },
                   {
@@ -887,6 +962,14 @@
                   },
                   {
                     "key": {
+                      "symbol": "exit_at_round"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "has_received_payout"
                     },
                     "val": {
@@ -895,7 +978,31 @@
                   },
                   {
                     "key": {
+                      "symbol": "is_exited_clean"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
                       "symbol": "is_slashed"
+                    },
+                    "val": {
+                      "bool": false
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "prepaid_rounds"
+                    },
+                    "val": {
+                      "u32": 0
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "trust_settled"
                     },
                     "val": {
                       "bool": false
@@ -924,6 +1031,18 @@
                     "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                   },
                   "storage": [
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "AllowedToken"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL"
+                      }
+                    },
                     {
                       "key": {
                         "vec": [
@@ -1090,7 +1209,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "30000000"
+                      "i128": "70000000"
                     }
                   },
                   {
@@ -1142,7 +1261,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "30000000"
+                      "i128": "60000000"
                     }
                   },
                   {
@@ -1194,7 +1313,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "30000000"
+                      "i128": "60000000"
                     }
                   },
                   {
@@ -1246,7 +1365,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "60000000"
+                      "i128": "80000000"
                     }
                   },
                   {

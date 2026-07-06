@@ -24,7 +24,12 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   23: "Circle was cancelled",
   24: "Join deadline has passed",
   25: "You are not a member of this circle",
-  26: "Cannot cancel this circle",
+  26: "Cannot cancel this circle — wait for join deadline or leave individually",
+  27: "Invalid token — only Circle USDC is allowed",
+  28: "Cannot exit before the round period ends (pay this round or wait)",
+  29: "Use complete exit after receiving your payout",
+  30: "Member already exited this circle",
+  33: "Complete exit requires receiving a payout first",
 };
 
 const TOKEN_ERRORS: Record<number, string> = {

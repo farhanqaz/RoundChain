@@ -97,6 +97,10 @@ export default function CirclePage() {
               minTrustScore={circle.min_trust_score}
               userTrustScore={data.trustScore?.score ?? null}
               isCreator={data.isCreator}
+              totalRounds={circle.total_rounds}
+              joinDeadline={circle.join_deadline}
+              hasReceivedPayout={data.hasReceivedPayout}
+              isExitedClean={data.isExitedClean}
               onSuccess={() => refresh(true)}
             />
           )}

@@ -23,7 +23,8 @@ describe("normalizeCircle", () => {
       next_payout_time: 1700000000n,
       min_trust_score: 20,
       created_at: 1699900000n,
-      join_deadline: null,
+      join_deadline: 1700000000n,
+      activated_at: 1699950000n,
     });
 
     expect(circle.creator).toBe("GCREATOR");
@@ -77,6 +78,10 @@ describe("normalizeMember", () => {
       has_received_payout: true,
       is_slashed: false,
       collateral_claimed: false,
+      is_exited_clean: false,
+      prepaid_rounds: 0,
+      exit_at_round: 0,
+      trust_settled: false,
     });
     expect(member.collateral_deposited).toBe(BigInt(50_000_000));
     expect(member.has_received_payout).toBe(true);

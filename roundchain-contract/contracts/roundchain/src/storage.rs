@@ -7,6 +7,7 @@ use crate::types::{CircleState, MemberState, TrustScore};
 #[soroban_sdk::contracttype]
 pub enum DataKey {
     NextCircleId,
+    AllowedToken,
     Circle(u32),
     Member(u32, Address),
     TrustScore(Address),
@@ -23,6 +24,23 @@ pub fn write_next_circle_id(env: &Env, id: u32) {
     env.storage()
         .instance()
         .set(&DataKey::NextCircleId, &id);
+}
+
+pub fn read_allowed_token(env: &Env) -> Result<Address, RoundChainError> {
+    env.storage()
+        .instance()
+        .get(&DataKey::AllowedToken)
+        .ok_or(RoundChainError::NotInitialized)
+}
+
+pub fn write_allowed_token(env: &Env, token: &Address) {
+    env.storage()
+        .instance()
+        .set(&DataKey::AllowedToken, token);
+}
+
+pub fn has_allowed_token(env: &Env) -> bool {
+    env.storage().instance().has(&DataKey::AllowedToken)
 }
 
 pub fn read_circle(env: &Env, circle_id: u32) -> Result<CircleState, RoundChainError> {

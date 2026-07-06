@@ -69,7 +69,7 @@ export default function DemoPage() {
         periodDuration: BigInt(60),
         maxMembers: 2,
         minTrustScore: null,
-        joinDeadline: null,
+        joinDeadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
       });
       const { returnValue } = await simulateAndSend(address, signWithFreighter, op);
       let id = returnValue != null ? Number(returnValue) : NaN;

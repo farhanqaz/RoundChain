@@ -20,6 +20,10 @@ CONTRACT_ID=$(stellar contract deploy \
   --network "$NETWORK" \
   --alias roundchain)
 
+echo "==> Initializing allowed token..."
+stellar contract invoke --id "$CONTRACT_ID" --source "$SOURCE" --network "$NETWORK" -- init \
+  --allowed_token "$USDC_SAC"
+
 echo ""
 echo "Deployed RoundChain contract:"
 echo "  CONTRACT_ID=$CONTRACT_ID"

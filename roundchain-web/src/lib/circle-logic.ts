@@ -31,22 +31,41 @@ export function isPeriodEnded(nextPayoutTime: bigint): boolean {
   return BigInt(Math.floor(Date.now() / 1000)) >= nextPayoutTime;
 }
 
+export function isJoinDeadlinePassed(deadline: bigint): boolean {
+  return BigInt(Math.floor(Date.now() / 1000)) >= deadline;
+}
+
+export function activeMembers(members: MemberDetail[]): MemberDetail[] {
+  return members.filter((m) => !m.is_slashed && !m.is_exited_clean);
+}
+
 export function calculateRoundPot(
   members: MemberDetail[],
-  contributionAmount: bigint
+  contributionAmount: bigint,
+  payoutOrder: string[],
+  currentRound: number
 ): bigint {
-  return members.reduce((sum, m) => {
-    if (m.is_slashed || !m.paid) return sum;
-    return sum + contributionAmount;
-  }, BigInt(0));
+  const recipient = payoutOrder[currentRound];
+  let pot = BigInt(0);
+  for (const m of members) {
+    if (m.address === recipient) continue;
+    if (m.is_slashed || !m.paid) continue;
+    pot += contributionAmount;
+  }
+  const fullPot =
+    BigInt(Math.max(0, payoutOrder.length - 1)) * contributionAmount;
+  if (pot < fullPot && allActivePaid(members)) {
+    pot = fullPot;
+  }
+  return pot;
 }
 
 export function activeDefaulters(members: MemberDetail[]): MemberDetail[] {
-  return members.filter((m) => !m.is_slashed && !m.paid);
+  return activeMembers(members).filter((m) => !m.paid);
 }
 
 export function allActivePaid(members: MemberDetail[]): boolean {
-  const active = members.filter((m) => !m.is_slashed);
+  const active = activeMembers(members);
   return active.length > 0 && active.every((m) => m.paid);
 }
 
@@ -65,7 +84,7 @@ export function recipientIsDefaulter(
   const recipient = scheduledRecipient(payoutOrder, currentRound);
   if (!recipient) return false;
   const member = members.find((m) => m.address === recipient);
-  return !!member && !member.is_slashed && !member.paid;
+  return !!member && !member.is_slashed && !member.is_exited_clean && !member.paid;
 }
 
 export function canRecipientClaimPayout(
@@ -83,4 +102,11 @@ export function canRecipientClaimPayout(
   if (!allActivePaid(members)) return false;
   if (recipientIsDefaulter(members, payoutOrder, currentRound)) return false;
   return true;
+}
+
+export function remainingSettlementRounds(
+  totalRounds: number,
+  currentRound: number
+): number {
+  return Math.max(0, totalRounds - currentRound);
 }

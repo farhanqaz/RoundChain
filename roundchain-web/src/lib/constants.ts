@@ -23,5 +23,11 @@ export const FAUCET_USDC_AMOUNT = BigInt(50_000_000); // 50 USDC (7 decimals)
 export const DEMO_PERIOD_SECONDS = 60;
 export const DEMO_CONTRIBUTION = 1_000_000; // 0.1 USDC
 
+export const DEFAULT_JOIN_WINDOW_DAYS = 30;
+
+export function defaultJoinDeadline(): bigint {
+  return BigInt(Math.floor(Date.now() / 1000) + DEFAULT_JOIN_WINDOW_DAYS * 86400);
+}
+
 export const DEFAULT_CONTRIBUTION = 10_000_000;
 export const DEFAULT_PERIOD = 604_800;
