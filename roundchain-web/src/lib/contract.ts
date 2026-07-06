@@ -577,6 +577,16 @@ export function formatUsdc(amount: bigint): string {
   return `${whole}.${frac.toString().padStart(7, "0").replace(/0+$/, "") || "0"}`;
 }
 
+/** Shorter USDC display for summaries (default 2 decimal places). */
+export function formatUsdcDisplay(amount: bigint, maxFractionDigits = 2): string {
+  const n = Number(amount) / 10_000_000;
+  if (!Number.isFinite(n)) return formatUsdc(amount);
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxFractionDigits,
+  });
+}
+
 export { formatPeriod, timeRemaining, isPeriodEnded } from "./circle-logic";
 
 export function explorerTxUrl(hash: string): string {
