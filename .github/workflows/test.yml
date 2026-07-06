@@ -1,0 +1,48 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  contract:
+    name: Soroban Contract
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roundchain-contract
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run contract tests
+        run: cargo test --manifest-path contracts/roundchain/Cargo.toml
+
+  web:
+    name: Web Client
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roundchain-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: roundchain-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build

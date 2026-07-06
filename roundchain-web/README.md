@@ -30,6 +30,7 @@ cp .env.local.example .env.local
 ```bash
 npm install
 npm run dev      # development server at localhost:3000
+npm test         # 38 unit tests (Vitest)
 npm run build    # production build
 npm run start    # serve production build
 npm run lint     # ESLint

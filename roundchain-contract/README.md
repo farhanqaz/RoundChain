@@ -6,7 +6,7 @@ Rust implementation of a trustless ROSCA on Stellar Soroban. Handles collateral 
 
 ```bash
 stellar contract build
-cargo test                    # 15 tests
+cargo test --manifest-path contracts/roundchain/Cargo.toml   # 20 tests
 ```
 
 ## Deploy

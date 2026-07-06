@@ -2,7 +2,7 @@ import { MemberDetail } from "./contract";
 
 export function formatPeriod(seconds: bigint): string {
   const s = Number(seconds);
-  if (s < 3600) return `${s}s`;
+  if (s < 60) return `${s}s`;
   if (s < 86400) {
     const m = Math.floor(s / 60);
     const rem = s % 60;

@@ -485,3 +485,66 @@ fn test_join_allowed_with_sufficient_trust() {
     assert_eq!(circle.member_count, 1);
     assert_eq!(token_client.balance(&setup.contract_id), CONTRIBUTION);
 }
+
+#[test]
+fn test_compute_trust_score_formula() {
+    use types::compute_trust_score;
+
+    assert_eq!(compute_trust_score(0, 0), 0);
+    assert_eq!(compute_trust_score(3, 0), 30);
+    assert_eq!(compute_trust_score(1, 1), 0);
+    assert_eq!(compute_trust_score(3, 1), 5);
+    assert_eq!(compute_trust_score(0, 2), 0);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #16)")]
+fn test_create_circle_rejects_zero_contribution() {
+    let setup = setup();
+    setup.client.create_circle(
+        &setup.admin,
+        &setup.token,
+        &0,
+        &PERIOD,
+        &3,
+        &NO_MIN_TRUST,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #17)")]
+fn test_create_circle_rejects_single_member_cap() {
+    let setup = setup();
+    setup.client.create_circle(
+        &setup.admin,
+        &setup.token,
+        &CONTRIBUTION,
+        &PERIOD,
+        &1,
+        &NO_MIN_TRUST,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #18)")]
+fn test_create_circle_rejects_zero_period() {
+    let setup = setup();
+    setup.client.create_circle(
+        &setup.admin,
+        &setup.token,
+        &CONTRIBUTION,
+        &0,
+        &3,
+        &NO_MIN_TRUST,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #10)")]
+fn test_contribute_twice_rejected() {
+    let setup = setup();
+    let (circle_id, members) = create_and_fill_circle(&setup, 2);
+    let member = members.get(0).unwrap();
+    setup.client.contribute(&circle_id, &member);
+    setup.client.contribute(&circle_id, &member);
+}

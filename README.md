@@ -102,7 +102,11 @@ roundchain-web/            Next.js 14 application
   src/components/          Circle dashboard, admin panel, wallet UI
 ```
 
-Contract test suite: **15 passing tests** covering lifecycle, slashing, payout randomization, and trust gating.
+Contract test suite: **20 passing tests** covering lifecycle, slashing, payout randomization, trust gating, and input validation.
+
+Web client: **38 unit tests** (Vitest) for trust scoring, circle logic, error parsing, and contract data normalization.
+
+CI runs both suites on every push to `main` via GitHub Actions (`.github/workflows/test.yml`).
 
 ## Contract Interface
 
@@ -128,12 +132,12 @@ Contract test suite: **15 passing tests** covering lifecycle, slashing, payout r
 
 ```bash
 # Contract
-cd roundchain-contract && cargo test
+cd roundchain-contract && cargo test --manifest-path contracts/roundchain/Cargo.toml
 
 # Frontend
 cd roundchain-web
 cp .env.local.example .env.local
-npm install && npm run dev
+npm install && npm test && npm run dev
 ```
 
 Configure Freighter for testnet, establish a USDC trustline (Circle issuer), and fund via [faucet.circle.com](https://faucet.circle.com/). An optional server-side faucet is available by setting `FAUCET_SECRET_KEY` in `.env.local`.
