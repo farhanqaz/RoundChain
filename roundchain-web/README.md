@@ -1,48 +1,66 @@
-# RoundChain Web
+# RoundChain — Web Client
 
-Next.js frontend for the RoundChain ROSCA protocol on Stellar testnet.
+Production-facing interface for the RoundChain ROSCA protocol. Connects to Soroban via RPC, signs transactions through Freighter, and surfaces circle state, admin actions, and on-chain trust scores.
 
-## Setup
+## Requirements
+
+- Node.js 18+
+- Freighter browser extension (testnet)
+- Deployed contract ID (defaults provided in `.env.local.example`)
+
+## Configuration
+
+Copy the example environment file and adjust if you have redeployed the contract:
+
+```bash
+cp .env.local.example .env.local
+```
+
+| Variable | Scope | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_CONTRACT_ID` | Client | Soroban contract address |
+| `NEXT_PUBLIC_USDC_TOKEN` | Client | Circle testnet USDC SAC |
+| `NEXT_PUBLIC_SOROBAN_RPC` | Client | Soroban RPC endpoint |
+| `NEXT_PUBLIC_NETWORK_PASSPHRASE` | Client | Stellar network identifier |
+| `NEXT_PUBLIC_EXPLORER_TX_URL` | Client | Transaction explorer base URL |
+| `FAUCET_SECRET_KEY` | Server | Optional faucet signer for `/api/faucet` |
+
+## Commands
 
 ```bash
 npm install
-cp .env.local.example .env.local   # edit CONTRACT_ID if redeployed
-npm run dev
+npm run dev      # development server at localhost:3000
+npm run build    # production build
+npm run start    # serve production build
+npm run lint     # ESLint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with **Freighter on testnet**.
+## Application Routes
 
-## Environment
+| Path | Role |
+|---|---|
+| `/` | Product landing |
+| `/demo` | Guided sandbox (short periods, minimal USDC) |
+| `/create` | Circle creation with optional trust threshold |
+| `/circles` | Index of on-chain circles |
+| `/circle/[id]` | Member operations: contribute, claim payout |
+| `/circle/[id]/admin` | Admin operations: start, slash |
+| `/join/[id]` | Member enrollment via shared link |
+| `/about` | Protocol overview and RPC health |
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_CONTRACT_ID` | Deployed Soroban contract |
-| `NEXT_PUBLIC_USDC_TOKEN` | Circle testnet USDC SAC |
-| `NEXT_PUBLIC_SOROBAN_RPC` | Soroban RPC URL |
-| `FAUCET_SECRET_KEY` | Server-only faucet wallet (optional) |
+## Wallet Setup (Testnet)
 
-## Pages
+1. Enable testnet in Freighter
+2. Fund the account with XLM (friendbot)
+3. Add trustline to Circle USDC issuer
+4. Obtain test USDC from [faucet.circle.com](https://faucet.circle.com/)
 
-| Route | Description |
-|-------|-------------|
-| `/` | Landing |
-| `/demo` | Sandbox wizard |
-| `/circles` | Browse all circles |
-| `/create` | Create a new circle |
-| `/circle/[id]` | Dashboard, contribute, claim payout |
-| `/circle/[id]/admin` | Start circle, slash defaulters |
+## Project Layout
 
-## Freighter testnet checklist
-
-1. Switch Freighter to **Testnet**
-2. Fund XLM via friendbot
-3. Add USDC trustline (Circle issuer)
-4. Get testnet USDC from [faucet.circle.com](https://faucet.circle.com/) (Stellar Testnet)
-
-## Demo flow
-
-1. Admin creates circle at `/create` → note circle ID
-2. Members join at `/join/[id]` (deposit collateral)
-3. Admin starts circle at `/circle/[id]/admin`
-4. Each round: members contribute → recipient claims payout on their turn
-5. After all rounds: members claim collateral back
+```
+src/
+  app/              Next.js App Router pages
+  components/       UI, circle dashboard, wallet connect
+  lib/              Contract bindings, errors, faucet helpers
+  providers/        Wallet and theme context
+```
