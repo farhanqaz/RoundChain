@@ -4,6 +4,7 @@ const labels: Record<CircleStatus, string> = {
   Pending: "Open",
   Active: "Active",
   Completed: "Done",
+  Cancelled: "Cancelled",
 };
 
 export function StatusBadge({ status }: { status: CircleStatus | string }) {

@@ -16,6 +16,8 @@ export interface CircleView {
   circle: CircleState;
   members: MemberDetail[];
   isMember: boolean;
+  isCreator: boolean;
+  /** @deprecated use isCreator */
   isAdmin: boolean;
   isSlashed: boolean;
   hasContributed: boolean;
@@ -65,11 +67,14 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
           }
         }
 
+        const isCreator = !!address && circle.creator === address;
+
         setData({
           circle,
           members,
           isMember,
-          isAdmin: !!address && circle.admin === address,
+          isCreator,
+          isAdmin: isCreator,
           isSlashed,
           hasContributed,
           collateralClaimed,

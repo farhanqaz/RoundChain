@@ -56,6 +56,12 @@ pub fn write_member(env: &Env, circle_id: u32, member: &MemberState) {
     );
 }
 
+pub fn delete_member(env: &Env, circle_id: u32, member: &Address) {
+    env.storage()
+        .persistent()
+        .remove(&DataKey::Member(circle_id, member.clone()));
+}
+
 pub fn member_exists(env: &Env, circle_id: u32, member: &Address) -> bool {
     env.storage()
         .persistent()

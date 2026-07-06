@@ -9,12 +9,13 @@ pub enum CircleStatus {
     Pending,
     Active,
     Completed,
+    Cancelled,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CircleState {
-    pub admin: Address,
+    pub creator: Address,
     pub token: Address,
     pub contribution_amount: i128,
     pub period_duration: u64,
@@ -26,6 +27,8 @@ pub struct CircleState {
     pub payout_order: Vec<Address>,
     pub next_payout_time: u64,
     pub min_trust_score: Option<u32>,
+    pub created_at: u64,
+    pub join_deadline: Option<u64>,
 }
 
 #[contracttype]

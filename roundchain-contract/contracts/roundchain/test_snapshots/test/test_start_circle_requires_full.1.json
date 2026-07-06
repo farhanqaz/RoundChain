@@ -50,6 +50,7 @@
                 {
                   "u32": 2
                 },
+                "void",
                 "void"
               ]
             }
@@ -238,18 +239,26 @@
                 "map": [
                   {
                     "key": {
-                      "symbol": "admin"
-                    },
-                    "val": {
-                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
-                    }
-                  },
-                  {
-                    "key": {
                       "symbol": "contribution_amount"
                     },
                     "val": {
                       "i128": "10000000"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "created_at"
+                    },
+                    "val": {
+                      "u64": "0"
+                    }
+                  },
+                  {
+                    "key": {
+                      "symbol": "creator"
+                    },
+                    "val": {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
                     }
                   },
                   {
@@ -259,6 +268,12 @@
                     "val": {
                       "u32": 0
                     }
+                  },
+                  {
+                    "key": {
+                      "symbol": "join_deadline"
+                    },
+                    "val": "void"
                   },
                   {
                     "key": {

@@ -6,7 +6,7 @@ Rust implementation of a trustless ROSCA on Stellar Soroban. Handles collateral 
 
 ```bash
 stellar contract build
-cargo test --manifest-path contracts/roundchain/Cargo.toml   # 20 tests
+cargo test --manifest-path contracts/roundchain/Cargo.toml   # 25 tests
 ```
 
 ## Deploy
@@ -19,7 +19,7 @@ Update `NEXT_PUBLIC_CONTRACT_ID` in the web client after deployment.
 
 ## Data Model
 
-**CircleState** — admin, token, contribution amount, period duration, member cap, round index, status (`Pending` | `Active` | `Completed`), payout order, optional `min_trust_score`.
+**CircleState** — creator, token, contribution amount, period duration, member cap, round index, status (`Pending` | `Active` | `Completed` | `Cancelled`), payout order, optional `min_trust_score`, `created_at`, optional `join_deadline`.
 
 **MemberState** — collateral balance, contributions paid, payout received flag, slash status, claim status.
 
@@ -27,26 +27,29 @@ Update `NEXT_PUBLIC_CONTRACT_ID` in the web client after deployment.
 
 ## Entry Points
 
-### Admin-gated
+### Creator / setup
 
 | Function | Returns | Notes |
 |---|---|---|
-| `create_circle(admin, token, amount, period, max_members, min_trust_score?)` | `u32` | Allocates circle ID |
-| `start_circle(circle_id)` | — | Shuffles payout order; sets status Active |
+| `create_circle(creator, token, amount, period, max_members, min_trust_score?, join_deadline?)` | `u32` | Allocates circle ID |
+| `cancel_circle(circle_id)` | — | Creator or anyone after join deadline; refunds all |
 
 ### Member-gated
 
 | Function | Notes |
 |---|---|
-| `join_circle(circle_id, member)` | Transfers collateral; checks trust threshold |
+| `join_circle(circle_id, member)` | Transfers collateral; auto-starts when full |
+| `leave_circle(circle_id, member)` | Refund while Pending |
 | `contribute(circle_id, member)` | Records round payment |
+| `exit_circle(circle_id, member)` | Voluntary forfeit during Active |
 | `claim_collateral(circle_id, member)` | Post-completion withdrawal |
 
 ### Permissionless
 
 | Function | Notes |
 |---|---|
-| `trigger_payout(circle_id)` | Pays current recipient; updates trust on final round |
+| `start_circle(circle_id)` | Recovery if Pending + full (normally auto-started) |
+| `trigger_payout(circle_id)` | Pays current recipient when all active members paid |
 | `slash_defaulter(circle_id, member)` | Forfeits collateral after deadline |
 
 ### Views
@@ -68,24 +71,26 @@ Open circle:
 
 ```bash
 stellar contract invoke --id <CONTRACT_ID> --source alice --network testnet -- create_circle \
-  --admin $(stellar keys address alice) \
+  --creator $(stellar keys address alice) \
   --token CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA \
   --contribution_amount 10000000 \
   --period_duration 604800 \
   --max_members 5 \
-  --min_trust_score null
+  --min_trust_score null \
+  --join_deadline null
 ```
 
 Trust-gated circle (minimum score 20):
 
 ```bash
 stellar contract invoke --id <CONTRACT_ID> --source alice --network testnet -- create_circle \
-  --admin $(stellar keys address alice) \
+  --creator $(stellar keys address alice) \
   --token CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA \
   --contribution_amount 50000000 \
   --period_duration 604800 \
   --max_members 5 \
-  --min_trust_score 20
+  --min_trust_score 20 \
+  --join_deadline null
 ```
 
 ## Testnet Asset

@@ -12,6 +12,7 @@ use soroban_sdk::{
 const CONTRIBUTION: i128 = 10_000_000;
 const PERIOD: u64 = 604_800;
 const NO_MIN_TRUST: Option<u32> = None;
+const NO_DEADLINE: Option<u64> = None;
 
 struct TestSetup<'a> {
     env: Env,
@@ -19,15 +20,15 @@ struct TestSetup<'a> {
     client: RoundChainContractClient<'a>,
     token: Address,
     token_admin: StellarAssetClient<'a>,
-    admin: Address,
+    creator: Address,
 }
 
 fn setup() -> TestSetup<'static> {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::generate(&env);
-    let sac = env.register_stellar_asset_contract_v2(admin.clone());
+    let creator = Address::generate(&env);
+    let sac = env.register_stellar_asset_contract_v2(creator.clone());
     let token = sac.address();
     let token_admin = StellarAssetClient::new(&env, &token);
 
@@ -40,7 +41,7 @@ fn setup() -> TestSetup<'static> {
         client,
         token,
         token_admin,
-        admin,
+        creator,
     }
 }
 
@@ -53,12 +54,13 @@ fn create_and_fill_circle(
     max_members: u32,
 ) -> (u32, soroban_sdk::Vec<Address>) {
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &max_members,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     let mut members = soroban_sdk::Vec::new(&setup.env);
@@ -73,7 +75,9 @@ fn create_and_fill_circle(
         members.push_back(member);
     }
 
-    setup.client.start_circle(&circle_id);
+    let circle = setup.client.get_circle(&circle_id);
+    assert_eq!(circle.status, CircleStatus::Active);
+
     (circle_id, members)
 }
 
@@ -81,17 +85,18 @@ fn create_and_fill_circle(
 fn test_create_circle() {
     let setup = setup();
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     assert_eq!(circle_id, 1);
     let circle = setup.client.get_circle(&circle_id);
-    assert_eq!(circle.admin, setup.admin);
+    assert_eq!(circle.creator, setup.creator);
     assert_eq!(circle.contribution_amount, CONTRIBUTION);
     assert_eq!(circle.max_members, 3);
     assert_eq!(circle.member_count, 0);
@@ -103,12 +108,13 @@ fn test_create_circle() {
 fn test_join_circle_deposits_collateral() {
     let setup = setup();
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     let member = Address::generate(&setup.env);
@@ -127,12 +133,13 @@ fn test_join_circle_deposits_collateral() {
 fn test_start_circle_requires_full() {
     let setup = setup();
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &2,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     let m1 = Address::generate(&setup.env);
@@ -144,19 +151,50 @@ fn test_start_circle_requires_full() {
 }
 
 #[test]
-fn test_payout_order_shuffled_on_start() {
+fn test_auto_start_on_last_join() {
     let setup = setup();
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
+        &setup.token,
+        &CONTRIBUTION,
+        &PERIOD,
+        &2,
+        &NO_MIN_TRUST,
+        &NO_DEADLINE,
+    );
+
+    let m1 = Address::generate(&setup.env);
+    let m2 = Address::generate(&setup.env);
+    fund_member(&setup.token_admin, &m1, CONTRIBUTION * 5);
+    fund_member(&setup.token_admin, &m2, CONTRIBUTION * 5);
+
+    setup.client.join_circle(&circle_id, &m1);
+    let pending = setup.client.get_circle(&circle_id);
+    assert_eq!(pending.status, CircleStatus::Pending);
+    assert_eq!(pending.member_count, 1);
+
+    setup.client.join_circle(&circle_id, &m2);
+    let active = setup.client.get_circle(&circle_id);
+    assert_eq!(active.status, CircleStatus::Active);
+    assert_eq!(active.member_count, 2);
+    assert!(active.next_payout_time > 0);
+}
+
+#[test]
+fn test_payout_order_shuffled_on_auto_start() {
+    let setup = setup();
+    let circle_id = setup.client.create_circle(
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &4,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     let mut members = soroban_sdk::Vec::new(&setup.env);
-    for _ in 0..4 {
+    for _ in 0..3 {
         let member = Address::generate(&setup.env);
         fund_member(&setup.token_admin, &member, CONTRIBUTION * 10);
         setup.client.join_circle(&circle_id, &member);
@@ -164,13 +202,18 @@ fn test_payout_order_shuffled_on_start() {
     }
 
     let pending = setup.client.get_circle(&circle_id);
-    for i in 0..4 {
+    assert_eq!(pending.status, CircleStatus::Pending);
+    for i in 0..3 {
         assert_eq!(pending.payout_order.get(i).unwrap(), members.get(i).unwrap());
     }
 
-    setup.client.start_circle(&circle_id);
+    let last = Address::generate(&setup.env);
+    fund_member(&setup.token_admin, &last, CONTRIBUTION * 10);
+    setup.client.join_circle(&circle_id, &last);
+    members.push_back(last.clone());
 
     let active = setup.client.get_circle(&circle_id);
+    assert_eq!(active.status, CircleStatus::Active);
     assert_eq!(active.payout_order.len(), 4);
 
     let mut seen = 0u32;
@@ -303,12 +346,13 @@ fn test_get_next_circle_id() {
     assert_eq!(setup.client.get_next_circle_id(), 1);
 
     setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
     assert_eq!(setup.client.get_next_circle_id(), 2);
 }
@@ -317,20 +361,22 @@ fn test_get_next_circle_id() {
 fn test_create_multiple_circles() {
     let setup = setup();
     let id1 = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
     let id2 = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &2,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 
     assert_eq!(id1, 1);
@@ -351,12 +397,13 @@ fn test_trust_score_starts_at_zero() {
 fn test_join_rejected_insufficient_trust() {
     let setup = setup();
     let circle_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &2,
         &Some(10),
+        &NO_DEADLINE,
     );
 
     let member = Address::generate(&setup.env);
@@ -470,12 +517,13 @@ fn test_join_allowed_with_sufficient_trust() {
     assert_eq!(trust.score, 10);
 
     let gated_id = setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &2,
         &Some(10),
+        &NO_DEADLINE,
     );
 
     fund_member(&setup.token_admin, &veteran, CONTRIBUTION * 5);
@@ -502,12 +550,13 @@ fn test_compute_trust_score_formula() {
 fn test_create_circle_rejects_zero_contribution() {
     let setup = setup();
     setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &0,
         &PERIOD,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 }
 
@@ -516,12 +565,13 @@ fn test_create_circle_rejects_zero_contribution() {
 fn test_create_circle_rejects_single_member_cap() {
     let setup = setup();
     setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &PERIOD,
         &1,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 }
 
@@ -530,12 +580,13 @@ fn test_create_circle_rejects_single_member_cap() {
 fn test_create_circle_rejects_zero_period() {
     let setup = setup();
     setup.client.create_circle(
-        &setup.admin,
+        &setup.creator,
         &setup.token,
         &CONTRIBUTION,
         &0,
         &3,
         &NO_MIN_TRUST,
+        &NO_DEADLINE,
     );
 }
 
@@ -547,4 +598,87 @@ fn test_contribute_twice_rejected() {
     let member = members.get(0).unwrap();
     setup.client.contribute(&circle_id, &member);
     setup.client.contribute(&circle_id, &member);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #21)")]
+fn test_trigger_payout_requires_all_contributions() {
+    let setup = setup();
+    let (circle_id, members) = create_and_fill_circle(&setup, 3);
+    setup.client.contribute(&circle_id, &members.get(0).unwrap());
+    setup.env.ledger().set_timestamp(PERIOD + 1);
+    setup.client.trigger_payout(&circle_id);
+}
+
+#[test]
+fn test_leave_circle_refunds_collateral() {
+    let setup = setup();
+    let circle_id = setup.client.create_circle(
+        &setup.creator,
+        &setup.token,
+        &CONTRIBUTION,
+        &PERIOD,
+        &3,
+        &NO_MIN_TRUST,
+        &NO_DEADLINE,
+    );
+
+    let member = Address::generate(&setup.env);
+    fund_member(&setup.token_admin, &member, CONTRIBUTION * 5);
+    setup.client.join_circle(&circle_id, &member);
+
+    let token_client = TokenClient::new(&setup.env, &setup.token);
+    let bal_before = token_client.balance(&member);
+
+    setup.client.leave_circle(&circle_id, &member);
+
+    assert_eq!(token_client.balance(&member) - bal_before, CONTRIBUTION);
+    let circle = setup.client.get_circle(&circle_id);
+    assert_eq!(circle.member_count, 0);
+}
+
+#[test]
+fn test_cancel_circle_by_creator() {
+    let setup = setup();
+    let circle_id = setup.client.create_circle(
+        &setup.creator,
+        &setup.token,
+        &CONTRIBUTION,
+        &PERIOD,
+        &2,
+        &NO_MIN_TRUST,
+        &NO_DEADLINE,
+    );
+
+    let member = Address::generate(&setup.env);
+    fund_member(&setup.token_admin, &member, CONTRIBUTION * 5);
+    setup.client.join_circle(&circle_id, &member);
+
+    let token_client = TokenClient::new(&setup.env, &setup.token);
+    let bal_before = token_client.balance(&member);
+
+    setup.client.cancel_circle(&circle_id, &setup.creator);
+
+    assert_eq!(token_client.balance(&member) - bal_before, CONTRIBUTION);
+    let circle = setup.client.get_circle(&circle_id);
+    assert_eq!(circle.status, CircleStatus::Cancelled);
+    assert_eq!(circle.member_count, 0);
+}
+
+#[test]
+fn test_exit_circle_forfeits_collateral() {
+    let setup = setup();
+    let (circle_id, members) = create_and_fill_circle(&setup, 2);
+    let exiter = members.get(0).unwrap();
+    let other = members.get(1).unwrap();
+
+    let token_client = TokenClient::new(&setup.env, &setup.token);
+    let other_before = token_client.balance(&other);
+
+    setup.client.exit_circle(&circle_id, &exiter);
+
+    let exiter_state = setup.client.get_member(&circle_id, &exiter);
+    assert!(exiter_state.is_slashed);
+    assert_eq!(exiter_state.collateral_deposited, 0);
+    assert_eq!(token_client.balance(&other) - other_before, CONTRIBUTION);
 }

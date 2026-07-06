@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { SetupUsdcTrustline } from "@/components/SetupUsdcTrustline";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Alert } from "@/components/ui/Alert";
@@ -28,7 +27,6 @@ import { CopyButton } from "@/components/CopyButton";
 const STEPS = ["Wallet", "USDC", "Balance", "Circle"];
 
 export default function DemoPage() {
-  const router = useRouter();
   const { address, connect } = useWallet();
   const [xlmDone, setXlmDone] = useState(false);
   const [trustline, setTrustline] = useState(false);
@@ -65,12 +63,13 @@ export default function DemoPage() {
     setError(null);
     try {
       const op = buildCreateCircleOp({
-        admin: address,
+        creator: address,
         token: USDC_SAC,
         contributionAmount: minUsdc,
         periodDuration: BigInt(60),
         maxMembers: 2,
         minTrustScore: null,
+        joinDeadline: null,
       });
       const { returnValue } = await simulateAndSend(address, signWithFreighter, op);
       let id = returnValue != null ? Number(returnValue) : NaN;
@@ -171,7 +170,7 @@ export default function DemoPage() {
               </button>
             </>
           ) : (
-            <SuccessPanel circleId={circleId} origin={origin} router={router} />
+            <SuccessPanel circleId={circleId} origin={origin} />
           )}
         </StepRow>
       </div>
@@ -184,11 +183,9 @@ export default function DemoPage() {
 function SuccessPanel({
   circleId,
   origin,
-  router,
 }: {
   circleId: number;
   origin: string;
-  router: ReturnType<typeof useRouter>;
 }) {
   const joinUrl = `${origin}/join/${circleId}`;
   const waLink = whatsAppShare(joinInviteMessage(circleId, origin));
@@ -196,7 +193,7 @@ function SuccessPanel({
   return (
     <div className="space-y-4">
       <Alert variant="success" title={`Circle #${circleId} is ready`}>
-        Join as a member, invite one more person, then start from the admin panel.
+        Join as a member and invite one more person. The circle starts automatically when full.
       </Alert>
       <div className="flex gap-2">
         <CopyButton text={joinUrl} label="Copy invite" />
@@ -208,9 +205,9 @@ function SuccessPanel({
         <Link href={`/join/${circleId}`} className="btn-primary text-center text-sm">
           Join now
         </Link>
-        <button type="button" onClick={() => router.push(`/circle/${circleId}/admin`)} className="btn-secondary text-sm">
-          Admin panel
-        </button>
+        <Link href={`/circle/${circleId}`} className="btn-secondary text-center text-sm">
+          View circle
+        </Link>
       </div>
     </div>
   );

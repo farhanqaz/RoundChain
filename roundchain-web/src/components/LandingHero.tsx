@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: IconShield,
     title: "On-chain trust score",
-    desc: "Complete circles cleanly to build reputation. Admins can gate larger pools by minimum score.",
+    desc: "Complete circles cleanly to build reputation. Creators can gate larger pools by minimum score.",
   },
   {
     icon: IconList,
@@ -113,7 +113,7 @@ export function LandingHero() {
           <div>
             <p className="section-label">Member access</p>
             <h2 className="mt-2 text-lg font-medium text-foreground">Join a circle</h2>
-            <p className="mt-1 text-sm text-muted">Enter the circle ID from your admin&apos;s invite</p>
+            <p className="mt-1 text-sm text-muted">Enter the circle ID from your invite link</p>
           </div>
           <form
             onSubmit={(e) => {

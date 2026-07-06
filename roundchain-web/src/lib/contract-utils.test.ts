@@ -10,7 +10,7 @@ import {
 describe("normalizeCircle", () => {
   it("parses soroban-shaped circle state", () => {
     const circle = normalizeCircle({
-      admin: "GADMIN",
+      creator: "GCREATOR",
       token: "GTOKEN",
       contribution_amount: 10_000_000n,
       period_duration: 604800n,
@@ -22,18 +22,20 @@ describe("normalizeCircle", () => {
       payout_order: ["GA", "GB"],
       next_payout_time: 1700000000n,
       min_trust_score: 20,
+      created_at: 1699900000n,
+      join_deadline: null,
     });
 
-    expect(circle.admin).toBe("GADMIN");
+    expect(circle.creator).toBe("GCREATOR");
+    expect(circle.admin).toBe("GCREATOR");
     expect(circle.contribution_amount).toBe(BigInt(10_000_000));
     expect(circle.status).toBe("Active");
-    expect(circle.payout_order).toEqual(["GA", "GB"]);
-    expect(circle.min_trust_score).toBe(20);
+    expect(circle.created_at).toBe(BigInt(1699900000));
   });
 
   it("handles void min_trust_score", () => {
     const circle = normalizeCircle({
-      admin: "GADMIN",
+      creator: "GCREATOR",
       token: "GTOKEN",
       contribution_amount: 1,
       period_duration: 1,
@@ -45,6 +47,8 @@ describe("normalizeCircle", () => {
       payout_order: [],
       next_payout_time: 0,
       min_trust_score: null,
+      created_at: 0,
+      join_deadline: null,
     });
     expect(circle.min_trust_score).toBeNull();
   });

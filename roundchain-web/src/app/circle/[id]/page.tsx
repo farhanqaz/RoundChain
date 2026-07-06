@@ -51,24 +51,18 @@ export default function CirclePage() {
             backLabel="Browse circles"
             title={`Circle #${circleId}`}
             badge={<StatusBadge status={circle.status} />}
-            action={
-              data.isAdmin ? (
-                <Link href={`/circle/${circleId}/admin`} className="btn-secondary px-4 py-2 text-sm">
-                  Admin
-                </Link>
-              ) : undefined
-            }
+            action={undefined}
           />
 
           {refreshing && (
             <p className="-mt-4 text-xs text-muted">Refreshing…</p>
           )}
 
-          {data.isAdmin && !data.isMember && circle.status === "Pending" && (
-            <Alert variant="warning" title="Admin must join">
-              You are not registered as a member yet.{" "}
+          {data.isCreator && !data.isMember && circle.status === "Pending" && (
+            <Alert variant="warning" title="Join as a member">
+              You created this circle but are not enrolled yet.{" "}
               <Link href={`/join/${circleId}`} className="underline">Join the circle</Link>{" "}
-              before starting — your slot counts toward {circle.max_members} members.
+              — your slot counts toward {circle.max_members} members.
             </Alert>
           )}
 
@@ -102,6 +96,7 @@ export default function CirclePage() {
               nextPayoutTime={circle.next_payout_time}
               minTrustScore={circle.min_trust_score}
               userTrustScore={data.trustScore?.score ?? null}
+              isCreator={data.isCreator}
               onSuccess={() => refresh(true)}
             />
           )}

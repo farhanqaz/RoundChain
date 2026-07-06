@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { FundWalletPanel } from "@/components/FundWalletPanel";
@@ -25,7 +24,6 @@ import { checkWalletSetup, dripXlmOnly } from "@/lib/setup";
 import { CopyButton } from "@/components/CopyButton";
 
 export default function CreateCirclePage() {
-  const router = useRouter();
   const { address } = useWallet();
   const [contribution, setContribution] = useState(String(DEFAULT_CONTRIBUTION / 10_000_000));
   const [periodDays, setPeriodDays] = useState(String(DEFAULT_PERIOD / 86400));
@@ -80,7 +78,7 @@ export default function CreateCirclePage() {
       }
 
       const op = buildCreateCircleOp({
-        admin: address,
+        creator: address,
         token: USDC_TOKEN,
         contributionAmount,
         periodDuration,
@@ -88,6 +86,7 @@ export default function CreateCirclePage() {
         minTrustScore: minTrustScore.trim()
           ? parseInt(minTrustScore, 10)
           : null,
+        joinDeadline: null,
       });
 
       const { hash, returnValue } = await simulateAndSend(address, signWithFreighter, op);
@@ -108,20 +107,16 @@ export default function CreateCirclePage() {
         <PageHeader
           label="Success"
           title={`Circle #${createdId}`}
-          description="Your circle is live. Join as a member, then invite others."
+          description="Share the join link. The circle starts automatically when all slots are filled."
         />
         <ShareCircle circleId={createdId} />
         <div className="grid gap-3 sm:grid-cols-2">
           <Link href={`/join/${createdId}`} className="btn-primary text-center">
             Join as member
           </Link>
-          <button
-            type="button"
-            onClick={() => router.push(`/circle/${createdId}/admin`)}
-            className="btn-secondary"
-          >
-            Admin panel
-          </button>
+          <Link href={`/circle/${createdId}`} className="btn-secondary text-center">
+            View circle
+          </Link>
         </div>
         {txHash && <TxResult hash={txHash} />}
       </div>
@@ -133,9 +128,9 @@ export default function CreateCirclePage() {
       <PageHeader
         backHref="/circles"
         backLabel="Browse circles"
-        label="Admin"
+        label="Create"
         title="Create a circle"
-        description="Set member count, contribution amount, and round period."
+        description="Set member count, contribution, and round period. Starts automatically when full."
       />
 
       {!address && (
@@ -178,7 +173,7 @@ export default function CreateCirclePage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr,280px]">
             <div className="card space-y-6 p-6">
-              <FormField label="Members" hint="Including you as admin">
+              <FormField label="Members" hint="You must join separately — your slot counts toward this total">
                 <input
                   type="number"
                   min={2}

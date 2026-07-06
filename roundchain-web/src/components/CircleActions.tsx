@@ -5,6 +5,7 @@ import { TxResult } from "@/components/TxResult";
 import { SetupUsdcTrustline } from "@/components/SetupUsdcTrustline";
 import { Alert } from "@/components/ui/Alert";
 import {
+  activeDefaulters,
   allActivePaid,
   calculateRoundPot,
   canRecipientClaimPayout,
@@ -13,9 +14,13 @@ import {
   timeRemaining,
 } from "@/lib/circle-logic";
 import {
+  buildCancelCircleOp,
   buildClaimCollateralOp,
   buildContributeOp,
+  buildExitCircleOp,
   buildJoinCircleOp,
+  buildLeaveCircleOp,
+  buildSlashDefaulterOp,
   buildTriggerPayoutOp,
   formatUsdc,
   getUsdcBalanceInfo,
@@ -46,6 +51,7 @@ interface Props {
   nextPayoutTime: bigint;
   minTrustScore?: number | null;
   userTrustScore?: number | null;
+  isCreator?: boolean;
   onSuccess: () => void;
 }
 
@@ -69,6 +75,7 @@ export function CircleActions(props: Props) {
     nextPayoutTime,
     minTrustScore,
     userTrustScore,
+    isCreator = false,
     onSuccess,
   } = props;
 
@@ -78,12 +85,17 @@ export function CircleActions(props: Props) {
   const [usdcInfo, setUsdcInfo] = useState<Awaited<ReturnType<typeof getUsdcBalanceInfo>> | null>(null);
 
   const issuer = resolveUsdcIssuer(tokenId);
+  const defaulters = activeDefaulters(members);
+  const canLeave = status === "Pending" && isMember && !isSlashed;
+  const canExit = status === "Active" && isMember && !isSlashed;
+  const canCancel = status === "Pending" && isCreator && memberCount > 0;
   const isFull = memberCount >= maxMembers;
   const recipient = scheduledRecipient(payoutOrder, currentRound);
   const isMyTurn = recipient === address;
   const periodEnded = isPeriodEnded(nextPayoutTime);
   const everyonePaid = allActivePaid(members);
   const roundPot = calculateRoundPot(members, contributionAmount);
+  const canSlash = status === "Active" && periodEnded && defaulters.length > 0;
 
   const refreshBalance = useCallback(() => {
     getUsdcBalanceInfo(address, tokenId).then(setUsdcInfo).catch(() => setUsdcInfo(null));
@@ -165,7 +177,11 @@ export function CircleActions(props: Props) {
         )}
 
         {status === "Pending" && !isMember && isFull && (
-          <Alert variant="info">This circle is full.</Alert>
+          <Alert variant="info">This circle is full — it starts automatically when the last member joins.</Alert>
+        )}
+
+        {status === "Cancelled" && (
+          <Alert variant="warning">This circle was cancelled. Collateral has been refunded to members.</Alert>
         )}
 
         {status === "Pending" && !isMember && trustRequired != null && (
@@ -222,13 +238,13 @@ export function CircleActions(props: Props) {
               <p className="text-sm text-muted">Waiting for all members to contribute.</p>
             )}
             <button
-              disabled={!!loading}
+              disabled={!!loading || !canClaimPayout}
               onClick={() => run("Payout", () => buildTriggerPayoutOp(circleId))}
               className="btn-primary w-full py-3"
             >
               {loading === "Payout"
                 ? "Processing…"
-                : `Claim ${formatUsdc(roundPot)} USDC`}
+                : `Release ${formatUsdc(roundPot)} USDC`}
             </button>
           </div>
         )}
@@ -251,10 +267,66 @@ export function CircleActions(props: Props) {
           </p>
         )}
 
-        {status === "Pending" && isMember && (
+        {status === "Pending" && isMember && !isFull && (
           <p className="text-sm text-muted">
             Joined — waiting for {maxMembers - memberCount} more member{maxMembers - memberCount !== 1 ? "s" : ""}.
+            The circle starts automatically when full.
           </p>
+        )}
+
+        {canLeave && (
+          <button
+            disabled={!!loading}
+            onClick={() => run("Leave", () => buildLeaveCircleOp(circleId, address))}
+            className="btn-secondary w-full py-3"
+          >
+            {loading === "Leave" ? "Processing…" : "Leave circle · full collateral refund"}
+          </button>
+        )}
+
+        {canExit && (
+          <div className="space-y-2 border border-border p-4">
+            <p className="text-sm text-muted">
+              Exit forfeits your collateral and counts as a default on your trust score.
+            </p>
+            <button
+              disabled={!!loading}
+              onClick={() => run("Exit", () => buildExitCircleOp(circleId, address))}
+              className="btn-danger w-full py-3"
+            >
+              {loading === "Exit" ? "Processing…" : "Exit circle"}
+            </button>
+          </div>
+        )}
+
+        {canCancel && (
+          <button
+            disabled={!!loading}
+            onClick={() => run("Cancel", () => buildCancelCircleOp(circleId, address))}
+            className="btn-danger w-full py-3"
+          >
+            {loading === "Cancel" ? "Processing…" : "Cancel circle · refund all members"}
+          </button>
+        )}
+
+        {canSlash && (
+          <div className="space-y-2 border-t border-border pt-4">
+            <p className="text-xs font-medium text-foreground">Slash late members</p>
+            {defaulters.map((d) => (
+              <button
+                key={d.address}
+                disabled={!!loading}
+                onClick={() => run("Slash", () => buildSlashDefaulterOp(circleId, d.address))}
+                className="btn-danger w-full text-sm"
+              >
+                Slash {shortenAddress(d.address)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!primaryAction && status === "Pending" && isMember && isFull && (
+          <p className="text-sm text-muted">Circle is full — starting on-chain…</p>
         )}
 
         {!primaryAction && status === "Active" && isMember && hasContributed && isMyTurn && !canClaimPayout && (

@@ -1,6 +1,6 @@
 # RoundChain — Web Client
 
-Production-facing interface for the RoundChain ROSCA protocol. Connects to Soroban via RPC, signs transactions through Freighter, and surfaces circle state, admin actions, and on-chain trust scores.
+Production-facing interface for the RoundChain ROSCA protocol. Connects to Soroban via RPC, signs transactions through Freighter, and surfaces circle state, member actions, and on-chain trust scores.
 
 ## Requirements
 
@@ -42,12 +42,13 @@ npm run lint     # ESLint
 |---|---|
 | `/` | Product landing |
 | `/demo` | Guided sandbox (short periods, minimal USDC) |
-| `/create` | Circle creation with optional trust threshold |
+| `/create` | Circle creation with optional trust threshold and join deadline |
 | `/circles` | Index of on-chain circles |
-| `/circle/[id]` | Member operations: contribute, claim payout |
-| `/circle/[id]/admin` | Admin operations: start, slash |
+| `/circle/[id]` | Member operations: contribute, leave, exit, cancel, slash |
 | `/join/[id]` | Member enrollment via shared link |
 | `/about` | Protocol overview and RPC health |
+
+Circles auto-start when the last member joins — no separate admin start step.
 
 ## Wallet Setup (Testnet)
 

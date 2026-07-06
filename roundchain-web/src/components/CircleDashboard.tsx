@@ -182,7 +182,7 @@ function PayoutTracker({
       <h2 className="text-sm font-medium text-foreground">Payout order</h2>
       <p className="mt-1 text-sm text-muted">
         {status === "Pending"
-          ? "Final order is shuffled on-chain when the admin starts"
+          ? "Payout order is shuffled on-chain when the last member joins"
           : `Each member receives the full pot once across ${totalRounds} rounds`}
       </p>
       <div className="mt-4 flex flex-wrap gap-2">

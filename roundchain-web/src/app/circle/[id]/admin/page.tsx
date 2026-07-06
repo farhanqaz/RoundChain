@@ -1,51 +1,19 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { AdminPanel } from "@/components/AdminPanel";
-import { CircleSkeleton } from "@/components/CircleSkeleton";
-import { ConnectWallet } from "@/components/ConnectWallet";
-import { Alert } from "@/components/ui/Alert";
-import { useWallet } from "@/providers/WalletProvider";
-import { useCircle } from "@/hooks/useCircle";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 
-export default function CircleAdminPage() {
+/** Legacy route — all circle actions live on the main dashboard. */
+export default function CircleAdminRedirectPage() {
   const params = useParams();
-  const circleId = parseInt(params.id as string, 10);
-  const { address } = useWallet();
-  const { data, error, loading, refresh } = useCircle(circleId, address, 10_000);
+  const router = useRouter();
+  const circleId = params.id as string;
 
-  if (!address) {
-    return (
-      <ConnectWallet
-        title="Admin access"
-        description="Connect the wallet used when creating this circle."
-      />
-    );
-  }
-
-  if (loading) return <CircleSkeleton />;
-
-  if (error || !data) {
-    return <Alert variant="error">{error ?? "Circle not found"}</Alert>;
-  }
-
-  const { circle, members, isAdmin } = data;
-  const adminInCircle = circle.payout_order.includes(circle.admin);
+  useEffect(() => {
+    router.replace(`/circle/${circleId}`);
+  }, [circleId, router]);
 
   return (
-    <AdminPanel
-      circleId={circleId}
-      address={address}
-      isAdmin={isAdmin}
-      status={circle.status}
-      members={members}
-      memberCount={circle.member_count}
-      maxMembers={circle.max_members}
-      currentRound={circle.current_round}
-      payoutOrder={circle.payout_order}
-      nextPayoutTime={circle.next_payout_time}
-      adminInCircle={adminInCircle}
-      onSuccess={() => refresh(true)}
-    />
+    <p className="text-sm text-muted">Redirecting to circle dashboard…</p>
   );
 }

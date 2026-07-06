@@ -25,10 +25,10 @@ export interface TokenBalanceInfo {
 
 export const server = new rpc.Server(SOROBAN_RPC);
 
-export type CircleStatus = "Pending" | "Active" | "Completed";
+export type CircleStatus = "Pending" | "Active" | "Completed" | "Cancelled";
 
 export interface CircleState {
-  admin: string;
+  creator: string;
   token: string;
   contribution_amount: bigint;
   period_duration: bigint;
@@ -40,6 +40,10 @@ export interface CircleState {
   payout_order: string[];
   next_payout_time: bigint;
   min_trust_score: number | null;
+  created_at: bigint;
+  join_deadline: bigint | null;
+  /** @deprecated use creator */
+  admin: string;
 }
 
 export interface TrustScore {
@@ -101,7 +105,7 @@ function toAddress(v: unknown): string {
   return String(v);
 }
 
-const CIRCLE_STATUSES = ["Pending", "Active", "Completed"] as const;
+const CIRCLE_STATUSES = ["Pending", "Active", "Completed", "Cancelled"] as const;
 
 function parseEnumVariant(raw: unknown): string | null {
   if (typeof raw === "string" && CIRCLE_STATUSES.includes(raw as CircleStatus)) {
@@ -131,7 +135,7 @@ function parseEnumVariant(raw: unknown): string | null {
 
 function parseStatus(raw: unknown): CircleStatus {
   const variant = parseEnumVariant(raw);
-  if (variant === "Pending" || variant === "Active" || variant === "Completed") {
+  if (variant === "Pending" || variant === "Active" || variant === "Completed" || variant === "Cancelled") {
     return variant;
   }
   return "Pending";
@@ -151,14 +155,28 @@ function parseOptionalU32(raw: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseOptionalU64(raw: unknown): bigint | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "object" && raw !== null) {
+    if ("tag" in raw && (raw as { tag: string }).tag === "None") return null;
+    if ("Some" in raw) return toBigInt((raw as { Some: unknown }).Some);
+  }
+  if (Array.isArray(raw) && raw.length === 0) return null;
+  const n = toBigInt(raw);
+  return n === BigInt(0) && raw === null ? null : n;
+}
+
 export function normalizeCircle(raw: Record<string, unknown>): CircleState {
   const payoutRaw = raw.payout_order;
   const payout_order = Array.isArray(payoutRaw)
     ? payoutRaw.map(toAddress)
     : [];
 
+  const creator = toAddress(raw.creator ?? raw.admin);
+
   return {
-    admin: toAddress(raw.admin),
+    creator,
+    admin: creator,
     token: toAddress(raw.token),
     contribution_amount: toBigInt(raw.contribution_amount),
     period_duration: toBigInt(raw.period_duration),
@@ -170,6 +188,8 @@ export function normalizeCircle(raw: Record<string, unknown>): CircleState {
     payout_order,
     next_payout_time: toBigInt(raw.next_payout_time),
     min_trust_score: parseOptionalU32(raw.min_trust_score),
+    created_at: toBigInt(raw.created_at),
+    join_deadline: parseOptionalU64(raw.join_deadline),
   };
 }
 
@@ -423,22 +443,31 @@ function optionalU32ScVal(value: number | null | undefined): xdr.ScVal {
   return nativeToScVal(value, { type: "u32" });
 }
 
+function optionalU64ScVal(value: bigint | number | null | undefined): xdr.ScVal {
+  if (value == null) {
+    return xdr.ScVal.scvVoid();
+  }
+  return nativeToScVal(typeof value === "bigint" ? value : BigInt(value), { type: "u64" });
+}
+
 export function buildCreateCircleOp(params: {
-  admin: string;
+  creator: string;
   token: string;
   contributionAmount: bigint;
   periodDuration: bigint;
   maxMembers: number;
   minTrustScore?: number | null;
+  joinDeadline?: bigint | number | null;
 }) {
   return contract().call(
     "create_circle",
-    addressScVal(params.admin),
+    addressScVal(params.creator),
     addressScVal(params.token),
     nativeToScVal(params.contributionAmount, { type: "i128" }),
     nativeToScVal(params.periodDuration, { type: "u64" }),
     nativeToScVal(params.maxMembers, { type: "u32" }),
-    optionalU32ScVal(params.minTrustScore)
+    optionalU32ScVal(params.minTrustScore),
+    optionalU64ScVal(params.joinDeadline)
   );
 }
 
@@ -455,6 +484,30 @@ export function buildContributeOp(circleId: number, member: string) {
     "contribute",
     nativeToScVal(circleId, { type: "u32" }),
     addressScVal(member)
+  );
+}
+
+export function buildLeaveCircleOp(circleId: number, member: string) {
+  return contract().call(
+    "leave_circle",
+    nativeToScVal(circleId, { type: "u32" }),
+    addressScVal(member)
+  );
+}
+
+export function buildExitCircleOp(circleId: number, member: string) {
+  return contract().call(
+    "exit_circle",
+    nativeToScVal(circleId, { type: "u32" }),
+    addressScVal(member)
+  );
+}
+
+export function buildCancelCircleOp(circleId: number, caller: string) {
+  return contract().call(
+    "cancel_circle",
+    nativeToScVal(circleId, { type: "u32" }),
+    addressScVal(caller)
   );
 }
 

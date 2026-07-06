@@ -26,8 +26,9 @@ RoundChain implements a full ROSCA lifecycle on Soroban:
 | Capability | Implementation |
 |---|---|
 | **Collateral escrow** | USDC locked at join; released only after circle completion |
-| **Fair payout order** | Fisher–Yates shuffle via Soroban PRNG at `start_circle` |
-| **Round enforcement** | Per-member contribution tracking with permissionless slashing |
+| **Fair payout order** | Fisher–Yates shuffle via Soroban PRNG when the last member joins |
+| **Auto-start** | No admin gate — circle activates when full |
+| **Round enforcement** | All members must contribute before payout; permissionless slashing |
 | **Financial reputation** | Persistent trust score updated on completion; gates entry to high-value circles |
 
 The result is a savings protocol that preserves the social model of arisan while adding cryptographic guarantees suitable for underbanked users who lack traditional credit scores.
@@ -43,15 +44,16 @@ The result is a savings protocol that preserves the social model of arisan while
 ┌──────────────────────────▼──────────────────────────────────┐
 │              RoundChain Soroban Contract                    │
 │                                                             │
-│  create_circle ──► join_circle ──► start_circle               │
-│       │                │               │                    │
-│       │         [collateral in]  [shuffle payout order]     │
-│       │                │               │                    │
-│       └──── contribute ◄──► trigger_payout (per round)      │
-│                    │                                        │
-│              slash_defaulter (permissionless)               │
-│                    │                                        │
-│         claim_collateral + trust score update               │
+│  create_circle ──► join_circle ──► [auto-start when full]       │
+│       │                │               │                        │
+│       │         [collateral in]  [shuffle payout order]         │
+│       │                │               │                        │
+│       ├── leave_circle / cancel_circle (while Pending)          │
+│       └──── contribute ◄──► trigger_payout (all must pay)       │
+│                    │                                            │
+│              slash_defaulter / exit_circle                      │
+│                    │                                            │
+│         claim_collateral + trust score update                   │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                     Circle USDC (SAC)
@@ -59,11 +61,13 @@ The result is a savings protocol that preserves the social model of arisan while
 
 ### Circle lifecycle
 
-1. **Configure** — Admin sets contribution amount, period duration, member cap, and optional minimum trust score.
-2. **Enroll** — Members join via invite link; collateral is transferred into the contract. Join is rejected if trust score is below the threshold.
-3. **Activate** — Admin starts the circle; payout order is randomized and recorded immutably on-chain.
-4. **Operate** — Each round, members contribute USDC. Once all contributions are recorded, any caller may trigger payout to the current recipient.
-5. **Resolve** — Defaulters may be slashed permissionlessly. After all rounds, members reclaim collateral. Trust scores are updated for every participant.
+1. **Configure** — Creator sets contribution amount, period duration, member cap, optional trust threshold, and optional join deadline.
+2. **Enroll** — Members join via invite link; collateral is locked in the contract. Members can **leave** while Pending for a full refund.
+3. **Activate** — When the last member joins, payout order is shuffled and the circle becomes Active automatically.
+4. **Operate** — Each round, all active members must contribute before payout releases. Defaulters may be slashed by anyone.
+5. **Resolve** — Members reclaim collateral after completion. Voluntary **exit** during Active forfeits collateral (same as default). Trust scores update for all participants.
+
+Circles still Pending can be **cancelled** by the creator, or by anyone after the join deadline passes.
 
 ## Trust Score
 
@@ -85,8 +89,8 @@ score = max(0, completed × 10 − defaulted × 25)
 
 | | |
 |---|---|
-| **Contract** | `CCDF2YTXH5B7ULUDQIM4LU4H633LQEFW3R75HWK76YFWMGJV2J6YSA7Y` |
-| **Explorer** | [stellar.expert/explorer/testnet/contract/…](https://stellar.expert/explorer/testnet/contract/CCDF2YTXH5B7ULUDQIM4LU4H633LQEFW3R75HWK76YFWMGJV2J6YSA7Y) |
+| **Contract** | `CAMYAUF6SQJ5HFHHZVSGUZGPEYLS2YEFISWGB6ZGCLF5SNGL4BPQ2QX4` |
+| **Explorer** | [stellar.expert/explorer/testnet/contract/…](https://stellar.expert/explorer/testnet/contract/CAMYAUF6SQJ5HFHHZVSGUZGPEYLS2YEFISWGB6ZGCLF5SNGL4BPQ2QX4) |
 | **USDC (Circle SAC)** | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 | **Network** | Stellar Testnet |
 
@@ -99,10 +103,10 @@ roundchain-contract/     Soroban contract (Rust, SDK v26)
 
 roundchain-web/            Next.js 14 application
   src/lib/contract.ts      Contract bindings & RPC client
-  src/components/          Circle dashboard, admin panel, wallet UI
+  src/components/          Circle dashboard, wallet UI, member actions
 ```
 
-Contract test suite: **20 passing tests** covering lifecycle, slashing, payout randomization, trust gating, and input validation.
+Contract test suite: **25 passing tests** covering auto-start, leave/cancel/exit, payout hardening, slashing, and trust gating.
 
 Web client: **38 unit tests** (Vitest) for trust scoring, circle logic, error parsing, and contract data normalization.
 
@@ -114,13 +118,16 @@ CI runs both suites on every push to `main` via GitHub Actions (`.github/workflo
 
 | Function | Authorization | Description |
 |---|---|---|
-| `create_circle` | Admin | Initialize circle parameters and optional trust threshold |
-| `join_circle` | Member | Deposit collateral; validate trust score |
-| `start_circle` | Admin | Transition to active; shuffle payout order |
+| `create_circle` | Creator | Initialize circle parameters, optional trust threshold & join deadline |
+| `join_circle` | Member | Deposit collateral; auto-starts when full |
+| `leave_circle` | Member | Refund collateral while Pending |
+| `cancel_circle` | Creator / anyone after deadline | Refund all members; status Cancelled |
+| `start_circle` | Any | Permissionless recovery if Pending + full |
 | `contribute` | Member | Submit round payment |
-| `trigger_payout` | Any | Disburse pot to current recipient; advance round |
-| `slash_defaulter` | Any | Forfeit slashed member's collateral |
-| `claim_collateral` | Member | Withdraw remaining collateral post-completion |
+| `trigger_payout` | Any | Disburse pot when all active members paid |
+| `slash_defaulter` | Any | Forfeit defaulter collateral |
+| `exit_circle` | Member | Voluntary forfeit during Active |
+| `claim_collateral` | Member | Withdraw collateral post-completion |
 
 ### Read-only
 

@@ -5,7 +5,7 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   4: "Circle is not open for new members",
   5: "Circle is not active",
   6: "Circle has not finished yet",
-  7: "Only the circle admin can do this",
+  7: "Only the circle creator can do this",
   8: "You are already a member",
   9: "Not enough members to start",
   10: "You already paid this round",
@@ -19,6 +19,12 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   18: "Invalid period duration",
   19: "Payout already received",
   20: "Trust score too low — complete circles to build reputation",
+  21: "Not all members have contributed this round",
+  22: "Scheduled recipient has not paid this round",
+  23: "Circle was cancelled",
+  24: "Join deadline has passed",
+  25: "You are not a member of this circle",
+  26: "Cannot cancel this circle",
 };
 
 const TOKEN_ERRORS: Record<number, string> = {
