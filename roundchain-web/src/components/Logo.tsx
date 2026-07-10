@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LOGO_SIZE } from "@/lib/logo-size";
 import { LogoMark } from "@/components/LogoMark";
 
 interface Props {
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export function Logo({ compact = false, large = false }: Props) {
-  const markSize = large ? 72 : compact ? 40 : 52;
+  const markSize = large ? LOGO_SIZE.display : compact ? LOGO_SIZE.compact : LOGO_SIZE.nav;
 
   return (
     <Link

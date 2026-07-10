@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import { AbstractBackground } from "@/components/AbstractBackground";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/providers/ThemeProvider";
@@ -44,13 +45,16 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} page-bg flex min-h-screen flex-col font-sans text-foreground antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} page-bg relative flex min-h-screen flex-col font-sans text-foreground antialiased`}
       >
+        <AbstractBackground />
         <ThemeProvider>
           <WalletProvider>
-            <Header />
-            <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-12">{children}</main>
-            <Footer />
+            <div className="relative z-10 flex min-h-screen flex-col">
+              <Header />
+              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-12">{children}</main>
+              <Footer />
+            </div>
           </WalletProvider>
         </ThemeProvider>
       </body>
