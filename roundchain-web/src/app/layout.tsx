@@ -52,7 +52,7 @@ export default function RootLayout({
           <WalletProvider>
             <div className="relative z-10 flex min-h-screen flex-col">
               <Header />
-              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-12">{children}</main>
+              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6 sm:py-14">{children}</main>
               <Footer />
             </div>
           </WalletProvider>

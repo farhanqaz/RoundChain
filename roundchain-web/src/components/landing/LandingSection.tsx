@@ -21,14 +21,19 @@ export function LandingSection({
 
   return (
     <section aria-labelledby={headingId} className={`landing-section ${className}`}>
-      <div className="animate-fade-up">
+      <div className="animate-fade-up max-w-2xl">
         <p className="section-label">{label}</p>
-        <h2 id={headingId} className="mt-2 text-xl font-medium text-foreground sm:text-2xl">
+        <h2
+          id={headingId}
+          className="mt-3 text-2xl font-medium tracking-tight text-foreground sm:text-[1.75rem] sm:leading-snug"
+        >
           {title}
         </h2>
-        {description && <p className="mt-2 max-w-xl text-sm text-muted">{description}</p>}
+        {description && (
+          <p className="mt-3 max-w-xl text-[15px] leading-7 text-muted">{description}</p>
+        )}
       </div>
-      <div className="mt-8">{children}</div>
+      <div className="mt-10">{children}</div>
     </section>
   );
 }

@@ -28,13 +28,13 @@ export function JoinCircleSection() {
           setJoinError(null);
           router.push(`/join/${id}`);
         }}
-        className="flex max-w-md flex-col gap-3 sm:flex-row sm:items-start"
+        className="landing-surface max-w-lg p-5 sm:p-6"
         noValidate
       >
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <label htmlFor={inputId} className="sr-only">
-            Circle ID
-          </label>
+        <label htmlFor={inputId} className="landing-accent block text-xs font-medium text-muted">
+          Circle ID
+        </label>
+        <div className="join-form-row mt-1.5">
           <input
             id={inputId}
             type="number"
@@ -47,18 +47,22 @@ export function JoinCircleSection() {
               setJoinError(null);
             }}
             aria-invalid={joinError ? true : undefined}
-            aria-describedby={joinError ? errorId : undefined}
-            className="input w-full"
+            aria-describedby={joinError ? errorId : "join-hint"}
+            className="input min-w-0 flex-1"
           />
-          {joinError && (
-            <p id={errorId} role="alert" className="text-sm text-destructive">
-              {joinError}
-            </p>
-          )}
+          <button type="submit" disabled={!joinId.trim()} className="btn-primary shrink-0 px-5">
+            Join circle
+          </button>
         </div>
-        <button type="submit" disabled={!joinId.trim()} className="btn-primary shrink-0 px-6">
-          Go to circle
-        </button>
+        {joinError ? (
+          <p id={errorId} role="alert" className="mt-1.5 text-sm text-destructive">
+            {joinError}
+          </p>
+        ) : (
+          <p id="join-hint" className="landing-accent mt-1.5 text-xs text-muted">
+            From an invite link like /join/12
+          </p>
+        )}
       </form>
     </LandingSection>
   );

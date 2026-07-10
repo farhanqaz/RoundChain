@@ -52,6 +52,7 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  line-height: 1.6;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -166,29 +167,132 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .landing-section {
-    @apply border-t border-border pt-12;
+    @apply border-t border-border pt-14 md:pt-16;
+  }
+
+  /* Unified landing interactions */
+  .landing-lift {
+    @apply transition-all duration-300;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-lift:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  .landing-surface {
+    @apply card landing-lift rounded-lg;
+  }
+
+  .landing-surface:hover,
+  .landing-surface:focus-within {
+    border-color: color-mix(in srgb, var(--foreground) 35%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  .landing-frame {
+    @apply overflow-hidden rounded-md border border-border bg-card transition-all duration-300;
+  }
+
+  .landing-surface:hover .landing-frame,
+  .landing-surface:focus-within .landing-frame,
+  .group:hover .landing-frame {
+    border-color: color-mix(in srgb, var(--foreground) 40%, var(--border));
+  }
+
+  .landing-accent {
+    @apply transition-colors duration-300;
+  }
+
+  .group:hover .landing-accent,
+  .landing-surface:hover .landing-accent {
+    color: var(--foreground);
+  }
+
+  .landing-row {
+    @apply transition-colors duration-300;
+  }
+
+  .landing-row:hover {
+    background: color-mix(in srgb, var(--muted-surface) 55%, transparent);
   }
 
   .demo-preview-card {
-    @apply card cursor-default;
+    @apply landing-surface cursor-default;
+  }
+
+  .how-steps-wrap {
+    position: relative;
+  }
+
+  .how-steps-flow {
+    pointer-events: none;
+    position: absolute;
+    z-index: 0;
+    display: none;
+    top: 22%;
+    right: 12%;
+    left: 12%;
+    height: 1px;
+  }
+
+  @media (min-width: 1024px) {
+    .how-steps-flow {
+      display: block;
+    }
+  }
+
+  .how-steps-flow__line {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+  }
+
+  .how-steps-flow__pulse {
+    position: absolute;
+    inset: -1px 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--foreground) 50%,
+      transparent 100%
+    );
+    opacity: 0.18;
+    animation: stepFlowPulse 4s ease-in-out infinite;
+  }
+
+  .how-steps-list {
+    @apply relative z-10 grid list-none gap-12 p-0 lg:grid-cols-3 lg:gap-8;
   }
 
   .how-step-item {
     position: relative;
+    @apply landing-lift flex flex-col;
   }
 
-  @media (min-width: 1024px) {
+  @media (max-width: 1023px) {
     .how-step-item:not(:last-child)::after {
-      content: "→";
+      content: "";
       position: absolute;
-      right: -0.75rem;
-      top: 72px;
-      font-size: 0.75rem;
-      line-height: 1;
-      color: var(--muted);
-      opacity: 0.45;
-      pointer-events: none;
+      bottom: -1.5rem;
+      left: 50%;
+      height: 1.5rem;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--border), transparent);
+      transform: translateX(-50%);
     }
+  }
+
+  .how-step-illus {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1.25rem;
+  }
+
+  .how-step-illus.landing-frame,
+  .how-step-illus {
+    background: var(--card);
   }
 
   .illus-ring-draw {
@@ -296,12 +400,7 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .card-hover {
-    @apply card cursor-default;
-  }
-
-  .card-hover:hover {
-    border-color: var(--foreground);
-    transform: translateY(-2px);
+    @apply landing-surface cursor-default;
   }
 
   .interactive-card {
@@ -320,28 +419,52 @@ input[type="number"]::-webkit-outer-spin-button {
   .btn-primary {
     background: var(--accent);
     color: var(--accent-fg);
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md px-5 text-sm font-medium tracking-tight transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary svg {
+    @apply transition-transform duration-200;
   }
 
   .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    opacity: 0.92;
+    opacity: 0.88;
+  }
+
+  .btn-primary:hover:not(:disabled) svg {
+    transform: translateX(2px);
   }
 
   .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
+    opacity: 1;
+    transform: scale(0.98);
   }
 
   .btn-secondary {
     background: var(--card);
     color: var(--foreground);
     border-color: var(--border);
-    @apply inline-flex items-center justify-center gap-2 rounded-md border px-5 py-2.5 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md border px-5 text-sm font-medium tracking-tight transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-secondary:hover:not(:disabled) {
     background: var(--muted-surface);
-    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--foreground) 25%, var(--border));
+  }
+
+  .btn-secondary svg {
+    @apply transition-transform duration-200;
+  }
+
+  .btn-secondary:hover:not(:disabled) svg {
+    transform: translateX(2px);
+  }
+
+  .btn-secondary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .btn-lg {
+    @apply h-11 px-6;
   }
 
   .btn-success {
@@ -368,17 +491,34 @@ input[type="number"]::-webkit-outer-spin-button {
     background: var(--card);
     color: var(--foreground);
     border-color: var(--border);
-    @apply w-full rounded-md border px-3 py-2.5 transition-all duration-200 placeholder:text-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground;
+    @apply min-h-10 w-full rounded-md border px-3.5 py-2 text-sm transition-all duration-200 placeholder:text-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground;
+  }
+
+  .input:hover:not(:focus):not(:disabled) {
+    border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
+  }
+
+  .join-form-row {
+    @apply flex flex-col gap-2.5 sm:flex-row sm:items-center;
+  }
+
+  .join-form-row .btn-primary {
+    @apply w-full sm:w-auto;
   }
 
   .section-label {
     color: var(--muted);
-    @apply text-[11px] font-medium uppercase tracking-[0.12em];
+    @apply text-[11px] font-medium uppercase tracking-[0.14em];
   }
 
   .stat-value {
     color: var(--foreground);
-    @apply text-lg font-medium tracking-tight;
+    @apply text-xl font-medium tracking-tight;
+  }
+
+  .stat-label {
+    color: var(--muted);
+    @apply text-[11px] font-medium uppercase tracking-[0.12em];
   }
 
   .action-panel {
@@ -430,12 +570,12 @@ input[type="number"]::-webkit-outer-spin-button {
 
   .progress-track {
     background: var(--ring-track);
-    @apply h-px overflow-hidden;
+    @apply h-[3px] overflow-hidden rounded-full;
   }
 
   .progress-fill {
     background: var(--ring-fill);
-    @apply h-px transition-all duration-700 ease-out;
+    @apply h-full rounded-full transition-all duration-700 ease-out;
   }
 
   .progress-bar-glow {
@@ -493,7 +633,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
   .grid-cell {
     background: var(--card);
-    @apply p-6 transition-colors duration-300;
+    @apply p-5 transition-colors duration-300 md:p-6;
   }
 }
 
@@ -771,6 +911,12 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
+@keyframes stepFlowPulse {
+  0% { transform: translateX(-100%); opacity: 0; }
+  40% { opacity: 0.35; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
 @keyframes illusRingDraw {
   0% { stroke-dashoffset: 220; opacity: 0.3; }
   35% { stroke-dashoffset: 0; opacity: 1; }
@@ -894,6 +1040,7 @@ input[type="number"]::-webkit-outer-spin-button {
   .abstract-bg__mesh,
   .abstract-bg__orb,
   .abstract-bg__ring,
+  .how-steps-flow__pulse,
   .illus-ring-draw,
   .illus-dot-pop,
   .illus-node,
@@ -929,6 +1076,8 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .card-hover:hover,
+  .landing-surface:hover,
+  .landing-lift:hover,
   .interactive-card:hover,
   .btn-primary:hover:not(:disabled),
   .btn-secondary:hover:not(:disabled) {

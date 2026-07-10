@@ -31,18 +31,20 @@ export function FeatureCards() {
       title="Built for trustless savings"
       description="Collateral, reputation, and fair order — enforced by smart contract, not group chat."
     >
-      <div className="grid gap-3 md:grid-divider md:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-1 md:grid-divider md:grid-cols-3">
         {FEATURES.map(({ title, desc, Illustration }, i) => (
           <div
             key={title}
-            className={`grid-cell card-hover group stagger-item stagger-${i + 1} flex items-start gap-3.5 rounded-md border border-border p-4 md:flex-col md:gap-3 md:rounded-none md:border-0 md:p-5`}
+            className={`grid-cell card-hover group stagger-item stagger-${i + 1} flex items-start gap-3.5 rounded-md border border-border p-4 sm:p-5 md:flex-col md:gap-3 md:rounded-none md:border-0`}
           >
-            <div className="shrink-0 overflow-hidden rounded-md border border-border bg-muted-surface/50 transition-colors duration-300 group-hover:border-foreground/30">
+            <div className="landing-frame shrink-0 bg-muted-surface/50">
               <Illustration />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-foreground">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">{desc}</p>
+              <h3 className="landing-accent text-[15px] font-medium leading-snug text-foreground">
+                {title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{desc}</p>
             </div>
           </div>
         ))}

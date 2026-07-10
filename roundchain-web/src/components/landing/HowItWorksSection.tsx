@@ -35,27 +35,36 @@ export function HowItWorksSection() {
       title="From setup to payout"
       description="Three on-chain steps — no treasurer, no group-chat drama."
     >
-      <ol className="grid list-none gap-10 p-0 lg:grid-cols-3 lg:gap-8">
-        {STEPS.map((step, i) => (
-          <li
-            key={step.n}
-            className={`how-step-item stagger-item stagger-${i + 1} group flex flex-col`}
-          >
-            <div className="mb-5 overflow-hidden rounded-md border border-border bg-card/80 backdrop-blur-sm transition-colors duration-300 group-hover:border-foreground/40">
-              <step.Illustration />
-            </div>
-            <span className="font-mono text-xs text-muted transition-colors group-hover:text-foreground">
-              {step.n}
-            </span>
-            <h3 className="mt-2 font-medium text-foreground">{step.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{step.desc}</p>
-          </li>
-        ))}
-      </ol>
+      <div className="how-steps-wrap">
+        <div className="how-steps-flow" aria-hidden>
+          <span className="how-steps-flow__line" />
+          <span className="how-steps-flow__pulse" />
+        </div>
 
-      <p className="mt-8 text-sm text-muted">
+        <ol className="how-steps-list">
+          {STEPS.map((step, i) => (
+            <li
+              key={step.n}
+              className={`how-step-item stagger-item stagger-${i + 1} group`}
+            >
+              <div className="how-step-illus landing-frame">
+                <step.Illustration />
+              </div>
+              <span className="how-step-num landing-accent font-mono text-xs text-muted">
+                {step.n}
+              </span>
+              <h3 className="landing-accent mt-2.5 text-[15px] font-medium leading-snug text-foreground">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{step.desc}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <p className="mt-10 text-sm leading-relaxed text-muted">
         Platform fee on each payout release:{" "}
-        <PlatformFeeNote className="text-foreground" suffix=" (on-chain)" />
+        <PlatformFeeNote className="landing-accent text-foreground transition-colors duration-300 hover:opacity-80" suffix=" (on-chain)" />
       </p>
     </LandingSection>
   );

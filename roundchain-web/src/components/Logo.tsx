@@ -19,7 +19,8 @@ export function Logo({ compact = false, large = false }: Props) {
     >
       <LogoMark
         size={markSize}
-        className="transition-transform duration-500 group-hover:scale-105"
+        animate={false}
+        className="transition-opacity duration-300 group-hover:opacity-80"
       />
       {!compact && (
         <span className={`font-medium tracking-tight text-foreground ${large ? "text-2xl" : "text-lg"}`}>

@@ -5,7 +5,7 @@ import { JoinCircleSection } from "@/components/landing/JoinCircleSection";
 
 export function LandingHero() {
   return (
-    <div className="space-y-16">
+    <div className="space-y-20 md:space-y-24">
       <HeroSection />
       <FeatureCards />
       <HowItWorksSection />
