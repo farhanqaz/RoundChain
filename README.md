@@ -1,3 +1,5 @@
+<img width="984" height="373" alt="Screenshot 2026-07-11 005343" src="https://github.com/user-attachments/assets/a97edda5-8697-4f84-919d-243d02ec1560" />
+
 # RoundChain
 
 **On-chain rotating savings circles with portable financial reputation.**
