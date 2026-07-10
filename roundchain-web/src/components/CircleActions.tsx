@@ -11,6 +11,7 @@ import {
   calculateRoundPot,
   canTriggerPayout,
   canVoluntaryExit,
+  formatFeePercent,
   isJoinDeadlinePassed,
   isPeriodEnded,
   memberMustPayThisRound,
@@ -18,7 +19,6 @@ import {
   remainingSettlementRounds,
   scheduledRecipient,
   timeRemaining,
-  formatFeePercent,
 } from "@/lib/circle-logic";
 import {
   buildCancelCircleOp,
@@ -304,7 +304,15 @@ export function CircleActions(props: Props) {
               </p>
             </div>
             {!everyonePaid && periodEnded && (
-              <p className="text-sm text-muted">Waiting for all contributors to pay this round.</p>
+              <div className="space-y-1">
+                <p className="text-sm text-muted">Waiting for all contributors to pay this round.</p>
+                {defaulters.length > 0 && (
+                  <p className="text-xs text-muted">
+                    Unpaid:{" "}
+                    {defaulters.map((d) => shortenAddress(d.address, 6)).join(", ")}
+                  </p>
+                )}
+              </div>
             )}
             <button
               disabled={!!loading || !canReleasePayout}

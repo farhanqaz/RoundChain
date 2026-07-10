@@ -20,11 +20,14 @@ const MEMBERS = (paid: boolean[]): MemberDetail[] =>
   paid.map((p, i) => ({
     address: `GADDR${i}`,
     paid: p,
+    contributions_paid: p ? 1 : 0,
     is_slashed: false,
     is_exited_clean: false,
     collateral_deposited: BigInt(0),
     has_received_payout: false,
     collateral_claimed: false,
+    prepaid_rounds: 0,
+    exit_at_round: 0,
   }));
 
 const ORDER = ["GADDR0", "GADDR1", "GADDR2"];
@@ -174,11 +177,11 @@ describe("contract-aligned helpers", () => {
     vi.useRealTimers();
   });
 
-  it("uses on-chain paid flag for round status", () => {
-    const member = MEMBERS([false])[0];
-    expect(memberHasPaidRound(member)).toBe(false);
-    member.paid = true;
-    expect(memberHasPaidRound(member)).toBe(true);
+  it("uses contributions_paid for round status", () => {
+    const member = MEMBERS([false, false, false])[1];
+    expect(memberHasPaidRound(member, ORDER, 0)).toBe(false);
+    member.contributions_paid = 1;
+    expect(memberHasPaidRound(member, ORDER, 0)).toBe(true);
   });
 
   it("blocks voluntary exit after paying this round", () => {

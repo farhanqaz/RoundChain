@@ -74,10 +74,13 @@ export interface ContributionEntry {
 
 export interface MemberDetail extends ContributionEntry {
   collateral_deposited: bigint;
+  contributions_paid: number;
   is_slashed: boolean;
   has_received_payout: boolean;
   collateral_claimed: boolean;
   is_exited_clean: boolean;
+  prepaid_rounds: number;
+  exit_at_round: number;
 }
 
 export interface TxResult {
@@ -431,26 +434,55 @@ export async function listCircles(): Promise<
 
 export async function getMemberDetails(
   circleId: number,
-  round: number
+  round: number,
+  payoutOrder: string[]
 ): Promise<MemberDetail[]> {
   const contributions = await getContributionStatus(circleId, round);
   const details: MemberDetail[] = [];
   for (const entry of contributions) {
     try {
       const member = await getMember(circleId, entry.address);
-      details.push({ ...entry, ...member });
+      const detail: MemberDetail = {
+        ...member,
+        address: entry.address,
+        paid: false,
+      };
+      detail.paid = roundObligationMetFromState(detail, payoutOrder, round);
+      details.push(detail);
     } catch {
-      details.push({
-        ...entry,
+      const detail: MemberDetail = {
+        address: entry.address,
+        paid: entry.paid,
         collateral_deposited: BigInt(0),
+        contributions_paid: 0,
         is_slashed: false,
         has_received_payout: false,
         collateral_claimed: false,
         is_exited_clean: false,
-      });
+        prepaid_rounds: 0,
+        exit_at_round: 0,
+      };
+      detail.paid = roundObligationMetFromState(detail, payoutOrder, round);
+      details.push(detail);
     }
   }
   return details;
+}
+
+function roundObligationMetFromState(
+  member: MemberDetail,
+  payoutOrder: string[],
+  round: number
+): boolean {
+  if (payoutOrder[round] === member.address) return true;
+  if (member.contributions_paid > round) return true;
+  if (member.is_exited_clean && member.prepaid_rounds > 0) {
+    return (
+      round >= member.exit_at_round &&
+      round < member.exit_at_round + member.prepaid_rounds
+    );
+  }
+  return false;
 }
 
 function optionalU32ScVal(value: number | null | undefined): xdr.ScVal {

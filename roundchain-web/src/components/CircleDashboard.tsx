@@ -8,7 +8,7 @@ import {
   shortenAddress,
   timeRemaining,
 } from "@/lib/contract";
-import { calculateRoundPot, formatFeePercent, formatPeriod, isJoinDeadlinePassed, isScheduledRecipient, netPotAfterFee } from "@/lib/circle-logic";
+import { calculateRoundPot, formatFeePercent, formatPeriod, isJoinDeadlinePassed, isScheduledRecipient, netPotAfterFee, roundObligationMet } from "@/lib/circle-logic";
 import { useFeeConfig } from "@/hooks/useFeeConfig";
 import { CircleFlowViz } from "@/components/CircleFlowViz";
 import { MemberSeatGrid } from "@/components/MemberSeatGrid";
@@ -199,7 +199,9 @@ function paymentStatus(
   if (isActive && isScheduledRecipient(entry.address, payoutOrder, currentRound)) {
     return { label: "Receiving this round", paid: true, slashed: false, receiving: true };
   }
-  if (entry.paid) return { label: "Paid this round", paid: true, slashed: false, receiving: false };
+  if (roundObligationMet(entry, payoutOrder, currentRound)) {
+    return { label: "Paid this round", paid: true, slashed: false, receiving: false };
+  }
   return { label: `Owes ${formatUsdc(contributionAmount)}`, paid: false, slashed: false, receiving: false };
 }
 

@@ -65,6 +65,31 @@ export function contributingMembers(
   return activeMembers(members).filter((m) => m.address !== recipient);
 }
 
+/** Matches on-chain has_paid_round. */
+export function hasPaidRound(
+  member: Pick<MemberDetail, "contributions_paid" | "is_exited_clean" | "prepaid_rounds" | "exit_at_round">,
+  round: number
+): boolean {
+  if (member.contributions_paid > round) return true;
+  if (member.is_exited_clean && member.prepaid_rounds > 0) {
+    return (
+      round >= member.exit_at_round &&
+      round < member.exit_at_round + member.prepaid_rounds
+    );
+  }
+  return false;
+}
+
+/** Matches on-chain round_obligation_met for the current round. */
+export function roundObligationMet(
+  member: MemberDetail,
+  payoutOrder: string[],
+  currentRound: number
+): boolean {
+  if (isScheduledRecipient(member.address, payoutOrder, currentRound)) return true;
+  return hasPaidRound(member, currentRound);
+}
+
 export function calculateRoundPot(
   members: MemberDetail[],
   contributionAmount: bigint,
@@ -75,7 +100,7 @@ export function calculateRoundPot(
   let pot = BigInt(0);
   for (const m of members) {
     if (m.address === recipient) continue;
-    if (m.is_slashed || !m.paid) continue;
+    if (m.is_slashed || !hasPaidRound(m, currentRound)) continue;
     pot += contributionAmount;
   }
   const fullPot =
@@ -93,7 +118,10 @@ export function allContributorsPaid(
   currentRound: number
 ): boolean {
   const contributors = contributingMembers(members, payoutOrder, currentRound);
-  return contributors.length > 0 && contributors.every((m) => m.paid);
+  return (
+    contributors.length > 0 &&
+    contributors.every((m) => roundObligationMet(m, payoutOrder, currentRound))
+  );
 }
 
 /** @deprecated use allContributorsPaid — kept for tests */
@@ -107,7 +135,9 @@ export function activeDefaulters(
   payoutOrder: string[],
   currentRound: number
 ): MemberDetail[] {
-  return contributingMembers(members, payoutOrder, currentRound).filter((m) => !m.paid);
+  return contributingMembers(members, payoutOrder, currentRound).filter(
+    (m) => !roundObligationMet(m, payoutOrder, currentRound)
+  );
 }
 
 /** True when anyone may call trigger_payout on-chain. */
@@ -137,8 +167,12 @@ export function canRecipientClaimPayout(
   return canTriggerPayout(members, payoutOrder, currentRound, nextPayoutTime, status);
 }
 
-export function memberHasPaidRound(member: MemberDetail): boolean {
-  return member.paid;
+export function memberHasPaidRound(
+  member: MemberDetail,
+  payoutOrder: string[],
+  currentRound: number
+): boolean {
+  return roundObligationMet(member, payoutOrder, currentRound);
 }
 
 export function memberMustPayThisRound(

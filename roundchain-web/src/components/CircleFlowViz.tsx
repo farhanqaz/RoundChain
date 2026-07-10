@@ -1,7 +1,7 @@
 "use client";
 
 import { formatUsdc, MemberDetail, shortenAddress } from "@/lib/contract";
-import { contributingMembers, scheduledRecipient } from "@/lib/circle-logic";
+import { contributingMembers, roundObligationMet, scheduledRecipient } from "@/lib/circle-logic";
 
 interface Props {
   members: MemberDetail[];
@@ -21,7 +21,9 @@ export function CircleFlowViz({
 }: Props) {
   const recipient = scheduledRecipient(payoutOrder, currentRound);
   const contributors = contributingMembers(members, payoutOrder, currentRound);
-  const paidCount = contributors.filter((m) => m.paid).length;
+  const paidCount = contributors.filter((m) =>
+    roundObligationMet(m, payoutOrder, currentRound)
+  ).length;
 
   return (
     <div className="flow-viz rounded-md border border-border bg-muted-surface/50 p-4 sm:p-5">
@@ -32,15 +34,15 @@ export function CircleFlowViz({
             <div
               key={m.address}
               className={`flow-node flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-mono ${
-                m.paid
+                roundObligationMet(m, payoutOrder, currentRound)
                   ? "border-foreground/30 bg-card text-foreground"
                   : "border-border text-muted"
               }`}
-              title={m.paid ? "Paid" : "Unpaid"}
+              title={roundObligationMet(m, payoutOrder, currentRound) ? "Paid" : "Unpaid"}
             >
               <span
                 className={`flow-dot h-1.5 w-1.5 shrink-0 rounded-full ${
-                  m.paid ? "bg-foreground animate-pulse-soft" : "bg-border"
+                  roundObligationMet(m, payoutOrder, currentRound) ? "bg-foreground animate-pulse-soft" : "bg-border"
                 }`}
               />
               {shortenAddress(m.address, 3)}

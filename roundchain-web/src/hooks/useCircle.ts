@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isScheduledRecipient, roundObligationMet } from "@/lib/circle-logic";
 import { CONTRACT_ID } from "@/lib/constants";
 import {
   CircleState,
@@ -46,7 +47,7 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
       try {
         const circle = await getCircle(circleId);
         const round = circle.status === "Active" ? circle.current_round : 0;
-        const members = await getMemberDetails(circleId, round);
+        const members = await getMemberDetails(circleId, round, circle.payout_order);
 
         let isMember = false;
         let hasContributed = false;
@@ -71,7 +72,10 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
             isExitedClean = member.is_exited_clean;
             const selfRow = members.find((m) => m.address === address);
             hasContributed =
-              selfRow?.paid ?? member.contributions_paid > round;
+              selfRow != null
+                ? roundObligationMet(selfRow, circle.payout_order, round) &&
+                  !isScheduledRecipient(address, circle.payout_order, round)
+                : member.contributions_paid > round;
           }
         }
 
