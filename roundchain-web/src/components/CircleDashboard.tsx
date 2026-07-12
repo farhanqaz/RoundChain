@@ -194,15 +194,21 @@ function paymentStatus(
   currentRound: number,
   isActive: boolean
 ) {
+  const displayRound = currentRound + 1;
   if (entry.is_slashed) return { label: "Collateral forfeited", paid: false, slashed: true, receiving: false };
   if (entry.is_exited_clean) return { label: "Prepaid · exited", paid: true, slashed: false, receiving: false };
   if (isActive && isScheduledRecipient(entry.address, payoutOrder, currentRound)) {
-    return { label: "Receiving this round", paid: true, slashed: false, receiving: true };
+    return { label: `Receiving round ${displayRound}`, paid: true, slashed: false, receiving: true };
   }
   if (roundObligationMet(entry, payoutOrder, currentRound)) {
-    return { label: "Paid this round", paid: true, slashed: false, receiving: false };
+    return { label: `Paid round ${displayRound}`, paid: true, slashed: false, receiving: false };
   }
-  return { label: `Owes ${formatUsdc(contributionAmount)}`, paid: false, slashed: false, receiving: false };
+  return {
+    label: `Owes round ${displayRound} · ${formatUsdc(contributionAmount)}`,
+    paid: false,
+    slashed: false,
+    receiving: false,
+  };
 }
 
 function MemberList({
@@ -311,7 +317,7 @@ function PayoutTracker({
       <p className="mt-1 text-sm text-muted">
         {status === "Pending"
           ? "Payout order is shuffled on-chain when the last member joins"
-          : `Each member receives the round pot once across ${totalRounds} rounds (${formatFeePercent(feeBps)} platform fee on release)`}
+          : `Who receives the pot each round (${totalRounds} rounds total · ${formatFeePercent(feeBps)} fee on release). This is not the payment schedule.`}
       </p>
 
       {status === "Active" && payoutOrder.length > 1 && (
@@ -338,8 +344,9 @@ function PayoutTracker({
                   >
                     {isPast ? "✓" : i + 1}
                   </div>
-                  <p className="mt-2 max-w-[4rem] truncate font-mono text-[10px] text-muted">
-                    {shortenAddress(addr, 3)}
+                  <p className="mt-2 max-w-[5rem] text-center text-[10px] text-muted">
+                    <span className="block font-medium text-foreground/80">Rnd {i + 1}</span>
+                    <span className="font-mono">{shortenAddress(addr, 3)}</span>
                   </p>
                 </div>
               );
@@ -364,8 +371,9 @@ function PayoutTracker({
               }`}
               style={{ animationDelay: `${0.2 + i * 0.05}s` }}
             >
-              R{i + 1}: {shortenAddress(addr, 4)}
-              {isCurrent && <span className="ml-1 text-muted">· now</span>}
+              <span className="text-muted">Round {i + 1} ·</span> {shortenAddress(addr, 4)}
+              {isCurrent && <span className="ml-1 text-muted">· receiving now</span>}
+              {!isCurrent && !isPast && <span className="ml-1 text-muted">· receives later</span>}
             </div>
           );
         })}

@@ -30,7 +30,7 @@ export default function JoinCirclePage() {
   const params = useParams();
   const circleId = parseInt(params.id as string, 10);
   const { address } = useWallet();
-  const { data, error, loading, refresh } = useCircle(circleId, address);
+  const { data, error, loading, refreshAfterTx } = useCircle(circleId, address);
 
   if (loading) return <CircleSkeleton />;
 
@@ -111,7 +111,7 @@ export default function JoinCirclePage() {
               userTrustScore={data.trustScore?.score ?? null}
               totalRounds={circle.total_rounds}
               joinDeadline={circle.join_deadline}
-              onSuccess={() => refresh(true)}
+              onSuccess={refreshAfterTx}
             />
           )}
         </>

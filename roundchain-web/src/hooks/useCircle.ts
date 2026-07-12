@@ -106,6 +106,13 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
     [circleId, address]
   );
 
+  /** Re-fetch after a tx — immediate + delayed retries for ledger propagation. */
+  const refreshAfterTx = useCallback(() => {
+    void refresh(true);
+    setTimeout(() => void refresh(true), 2000);
+    setTimeout(() => void refresh(true), 5000);
+  }, [refresh]);
+
   useEffect(() => {
     refresh();
     if (pollMs <= 0) return;
@@ -113,5 +120,5 @@ export function useCircle(circleId: number, address: string | null, pollMs = 15_
     return () => clearInterval(id);
   }, [refresh, pollMs]);
 
-  return { data, error, loading, refreshing, refresh };
+  return { data, error, loading, refreshing, refresh, refreshAfterTx };
 }

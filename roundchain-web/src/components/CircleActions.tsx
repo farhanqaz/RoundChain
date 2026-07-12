@@ -135,7 +135,9 @@ export function CircleActions(props: Props) {
   const canCancel =
     status === "Pending" && memberCount > 0 && joinDeadline > BigInt(0) && joinClosed;
   const canStartRecovery = status === "Pending" && isFull;
-  const canSlash = status === "Active" && periodEnded && defaulters.length > 0;
+  const canSlash =
+    status === "Active" && periodEnded && defaulters.length > 0 && !everyonePaid;
+  const displayRound = currentRound + 1;
   const canReleasePayout = canTriggerPayout(
     members,
     payoutOrder,
@@ -287,7 +289,7 @@ export function CircleActions(props: Props) {
             onClick={() => run("Contribute", () => buildContributeOp(circleId, address))}
             className="btn-primary w-full py-3"
           >
-            {loading === "Contribute" ? "Processing…" : `Pay ${formatUsdc(contributionAmount)} USDC`}
+            {loading === "Contribute" ? "Processing…" : `Pay round ${displayRound} · ${formatUsdc(contributionAmount)} USDC`}
           </button>
         )}
 
@@ -295,7 +297,7 @@ export function CircleActions(props: Props) {
           <div className="space-y-3 border border-border p-4">
             <div>
               <p className="font-medium text-foreground">
-                {isMyTurn ? "Your payout turn" : "Round ready to release"}
+                {isMyTurn ? `Round ${displayRound} · your payout` : `Round ${displayRound} ready to release`}
               </p>
               <p className="mt-1 text-sm text-muted">
                 {isMyTurn
@@ -338,14 +340,23 @@ export function CircleActions(props: Props) {
 
         {status === "Active" && isMember && isRecipientThisRound && !canReleasePayout && (
           <p className="text-sm text-muted">
-            Your payout turn — waiting for others to pay this round.
-            {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
+            {everyonePaid ? (
+              <>
+                Round {displayRound} · all members paid — release opens when the period ends
+                {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
+              </>
+            ) : (
+              <>
+                Round {displayRound} payout — waiting for others to pay this round.
+                {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
+              </>
+            )}
           </p>
         )}
 
         {status === "Active" && isMember && hasContributed && !canReleasePayout && recipient && !isRecipientThisRound && (
           <p className="text-sm text-muted">
-            Round paid · next:{" "}
+            Round {displayRound} paid · recipient{" "}
             <span className="font-mono text-foreground">{shortenAddress(recipient, 6)}</span>
             {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
           </p>
@@ -432,7 +443,12 @@ export function CircleActions(props: Props) {
 
         {canSlash && (
           <div className="space-y-2 border-t border-border pt-4">
-            <p className="text-xs font-medium text-foreground">Slash non-payers</p>
+            <p className="text-xs font-medium text-foreground">
+              Round {displayRound} ended · unpaid members
+            </p>
+            <p className="text-xs text-muted">
+              Slash only applies to members who missed this round after the deadline.
+            </p>
             {defaulters.map((d) => (
               <button
                 key={d.address}
@@ -440,7 +456,7 @@ export function CircleActions(props: Props) {
                 onClick={() => run("Slash", () => buildSlashDefaulterOp(circleId, d.address))}
                 className="btn-danger w-full text-sm"
               >
-                Slash {shortenAddress(d.address)}
+                Slash {shortenAddress(d.address)} · round {displayRound}
               </button>
             ))}
           </div>
