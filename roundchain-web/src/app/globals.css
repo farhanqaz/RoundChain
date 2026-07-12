@@ -17,12 +17,7 @@
   --destructive: #dc2626;
   --bg-glow-a: rgba(10, 10, 10, 0.04);
   --bg-glow-b: rgba(10, 10, 10, 0.03);
-  --bg-glow-c: rgba(10, 10, 10, 0.025);
-  --bg-orb-1: rgba(10, 10, 10, 0.06);
-  --bg-orb-2: rgba(10, 10, 10, 0.05);
-  --bg-orb-3: rgba(10, 10, 10, 0.04);
-  --bg-orb-opacity: 0.9;
-  --bg-ring: rgba(10, 10, 10, 0.12);
+  --bg-glow-c: rgba(10, 10, 10, 0.02);
 }
 
 .dark {
@@ -39,13 +34,8 @@
   --header-bg: rgba(10, 10, 10, 0.92);
   --destructive: #f87171;
   --bg-glow-a: rgba(250, 250, 250, 0.05);
-  --bg-glow-b: rgba(250, 250, 250, 0.04);
-  --bg-glow-c: rgba(250, 250, 250, 0.03);
-  --bg-orb-1: rgba(250, 250, 250, 0.07);
-  --bg-orb-2: rgba(250, 250, 250, 0.05);
-  --bg-orb-3: rgba(250, 250, 250, 0.04);
-  --bg-orb-opacity: 0.85;
-  --bg-ring: rgba(250, 250, 250, 0.1);
+  --bg-glow-b: rgba(250, 250, 250, 0.035);
+  --bg-glow-c: rgba(250, 250, 250, 0.025);
 }
 
 body {
@@ -53,12 +43,23 @@ body {
   background: var(--background);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   line-height: 1.6;
+  overflow-x: hidden;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  opacity: 0.4;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 @layer components {
@@ -75,86 +76,14 @@ input[type="number"]::-webkit-outer-spin-button {
     overflow: hidden;
   }
 
-  .abstract-bg__mesh {
-    position: absolute;
-    inset: -40%;
-    opacity: 0.45;
-    background:
-      radial-gradient(ellipse 50% 40% at 20% 30%, var(--bg-glow-a) 0%, transparent 55%),
-      radial-gradient(ellipse 45% 50% at 80% 70%, var(--bg-glow-b) 0%, transparent 50%),
-      radial-gradient(ellipse 35% 35% at 55% 15%, var(--bg-glow-c) 0%, transparent 45%);
-    animation: meshDrift 28s ease-in-out infinite alternate;
-  }
-
-  .abstract-bg__orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(72px);
-    opacity: var(--bg-orb-opacity);
-    will-change: transform;
-  }
-
-  .abstract-bg__orb--1 {
-    width: min(42vw, 420px);
-    height: min(42vw, 420px);
-    top: -8%;
-    left: -6%;
-    background: var(--bg-orb-1);
-    animation: orbFloat1 22s ease-in-out infinite;
-  }
-
-  .abstract-bg__orb--2 {
-    width: min(36vw, 360px);
-    height: min(36vw, 360px);
-    top: 38%;
-    right: -10%;
-    background: var(--bg-orb-2);
-    animation: orbFloat2 26s ease-in-out infinite;
-  }
-
-  .abstract-bg__orb--3 {
-    width: min(28vw, 280px);
-    height: min(28vw, 280px);
-    bottom: -6%;
-    left: 28%;
-    background: var(--bg-orb-3);
-    animation: orbFloat3 20s ease-in-out infinite;
-  }
-
-  .abstract-bg__ring {
-    position: absolute;
-    border-radius: 50%;
-    border: 1px dashed var(--bg-ring);
-    opacity: 0.35;
-    will-change: transform;
-  }
-
-  .abstract-bg__ring--1 {
-    width: min(70vw, 560px);
-    height: min(70vw, 560px);
-    top: 12%;
-    right: -18%;
-    animation: ringSpin 48s linear infinite;
-  }
-
-  .abstract-bg__ring--2 {
-    width: min(55vw, 440px);
-    height: min(55vw, 440px);
-    bottom: 8%;
-    left: -14%;
-    animation: ringSpin 64s linear infinite reverse;
-  }
-
-  .abstract-bg__grain {
+  .abstract-bg__gradient {
     position: absolute;
     inset: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 180px 180px;
-  }
-
-  .dark .abstract-bg__grain {
-    opacity: 0.05;
+    background:
+      radial-gradient(ellipse 55% 45% at 15% 20%, var(--bg-glow-a) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 75%, var(--bg-glow-b) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 0%, var(--bg-glow-c) 0%, transparent 50%),
+      var(--background);
   }
 
   /* Landing step & feature illustrations */
@@ -224,6 +153,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
   .how-steps-wrap {
     position: relative;
+    overflow: hidden;
   }
 
   .how-steps-flow {
@@ -235,6 +165,7 @@ input[type="number"]::-webkit-outer-spin-button {
     right: 12%;
     left: 12%;
     height: 1px;
+    overflow: hidden;
   }
 
   @media (min-width: 1024px) {
@@ -247,19 +178,6 @@ input[type="number"]::-webkit-outer-spin-button {
     position: absolute;
     inset: 0;
     background: var(--border);
-  }
-
-  .how-steps-flow__pulse {
-    position: absolute;
-    inset: -1px 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      var(--foreground) 50%,
-      transparent 100%
-    );
-    opacity: 0.18;
-    animation: stepFlowPulse 4s ease-in-out infinite;
   }
 
   .how-steps-list {
@@ -499,7 +417,7 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 
   .join-form-row {
-    @apply flex flex-col gap-2.5 sm:flex-row sm:items-center;
+    @apply flex w-full max-w-full flex-col gap-2.5 sm:flex-row sm:items-center;
   }
 
   .join-form-row .btn-primary {
@@ -860,63 +778,6 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
-@keyframes meshDrift {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-  100% {
-    transform: translate(3%, -2%) scale(1.06);
-  }
-}
-
-@keyframes orbFloat1 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(6%, 8%) scale(1.05);
-  }
-  66% {
-    transform: translate(3%, -4%) scale(0.96);
-  }
-}
-
-@keyframes orbFloat2 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-8%, 5%) scale(1.08);
-  }
-}
-
-@keyframes orbFloat3 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  40% {
-    transform: translate(5%, -6%) scale(1.04);
-  }
-  80% {
-    transform: translate(-4%, 3%) scale(0.97);
-  }
-}
-
-@keyframes ringSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes stepFlowPulse {
-  0% { transform: translateX(-100%); opacity: 0; }
-  40% { opacity: 0.35; }
-  100% { transform: translateX(100%); opacity: 0; }
-}
-
 @keyframes illusRingDraw {
   0% { stroke-dashoffset: 220; opacity: 0.3; }
   35% { stroke-dashoffset: 0; opacity: 1; }
@@ -1037,10 +898,6 @@ input[type="number"]::-webkit-outer-spin-button {
     animation: none;
   }
 
-  .abstract-bg__mesh,
-  .abstract-bg__orb,
-  .abstract-bg__ring,
-  .how-steps-flow__pulse,
   .illus-ring-draw,
   .illus-dot-pop,
   .illus-node,

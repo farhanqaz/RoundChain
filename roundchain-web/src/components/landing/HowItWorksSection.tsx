@@ -38,7 +38,6 @@ export function HowItWorksSection() {
       <div className="how-steps-wrap">
         <div className="how-steps-flow" aria-hidden>
           <span className="how-steps-flow__line" />
-          <span className="how-steps-flow__pulse" />
         </div>
 
         <ol className="how-steps-list">

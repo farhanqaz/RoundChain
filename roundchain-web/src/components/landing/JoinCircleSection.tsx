@@ -28,7 +28,7 @@ export function JoinCircleSection() {
           setJoinError(null);
           router.push(`/join/${id}`);
         }}
-        className="landing-surface max-w-lg p-5 sm:p-6"
+        className="landing-surface w-full max-w-lg p-5 sm:p-6"
         noValidate
       >
         <label htmlFor={inputId} className="landing-accent block text-xs font-medium text-muted">

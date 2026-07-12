@@ -77,7 +77,7 @@ export function HeroSection() {
               <li
                 key={m.name}
                 className={`landing-row flex items-center justify-between gap-4 rounded-md border-t border-border py-3 text-sm first:border-t-0 first:pt-0 ${
-                  m.highlight ? "bg-muted-surface/40 -mx-2 px-2" : "px-0.5"
+                  m.highlight ? "bg-muted-surface/40 px-2" : ""
                 }`}
               >
                 <span

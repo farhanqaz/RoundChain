@@ -13,7 +13,7 @@ export function Footer() {
             <PlatformFeeNote prefix="" suffix=" fee on payout releases." />
           </p>
         </div>
-        <div className="flex gap-16 text-sm">
+        <div className="flex flex-wrap gap-x-12 gap-y-6 text-sm sm:gap-x-16">
           <div className="space-y-2">
             <p className="text-muted">Product</p>
             <Link href="/demo" className="block text-muted transition hover:text-foreground">
