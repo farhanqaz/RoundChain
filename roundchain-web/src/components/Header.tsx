@@ -10,7 +10,7 @@ import { useWallet } from "@/providers/WalletProvider";
 import { shortenAddress } from "@/lib/contract";
 
 export function Header() {
-  const { address, loading, error, connect, disconnect } = useWallet();
+  const { address, loading, connecting, error, connect, disconnect } = useWallet();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -51,8 +51,12 @@ export function Header() {
               </button>
             </>
           ) : (
-            <button onClick={connect} className="btn-primary px-4 py-2 text-sm">
-              Connect
+            <button
+              onClick={connect}
+              disabled={connecting}
+              className="btn-primary px-4 py-2 text-sm"
+            >
+              {connecting ? "Connecting…" : "Connect"}
             </button>
           )}
         </div>
@@ -75,8 +79,12 @@ export function Header() {
         <div className="border-t border-border px-4 py-4 md:hidden animate-fade-up">
           <div className="space-y-1">
             {!address && (
-              <button onClick={connect} className="btn-primary mb-3 w-full text-sm">
-                Connect wallet
+              <button
+                onClick={connect}
+                disabled={connecting}
+                className="btn-primary mb-3 w-full text-sm"
+              >
+                {connecting ? "Connecting…" : "Connect wallet"}
               </button>
             )}
             <Link href="/create" onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm text-foreground">

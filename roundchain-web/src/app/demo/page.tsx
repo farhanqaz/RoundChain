@@ -37,7 +37,7 @@ import { PageShell } from "@/components/PageShell";
 const STEPS = ["Wallet", "USDC", "Balance", "Circle"];
 
 export default function DemoPage() {
-  const { address, connect } = useWallet();
+  const { address, connect, connecting } = useWallet();
   const [xlmDone, setXlmDone] = useState(false);
   const [trustline, setTrustline] = useState(false);
   const [usdcBalance, setUsdcBalance] = useState<bigint | null>(null);
@@ -155,8 +155,13 @@ export default function DemoPage() {
       <div className="action-panel">
         <StepRow done={!!address} active={stepIndex === 0} title="Connect wallet">
           {!address ? (
-            <button type="button" onClick={connect} className="btn-primary w-full">
-              Connect Freighter
+            <button
+              type="button"
+              onClick={connect}
+              disabled={connecting}
+              className="btn-primary w-full"
+            >
+              {connecting ? "Connecting…" : "Connect Freighter"}
             </button>
           ) : (
             <p className="text-sm text-muted">
