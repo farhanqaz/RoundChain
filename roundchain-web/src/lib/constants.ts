@@ -22,6 +22,9 @@ export const EXPLORER_CONTRACT_URL =
 export const FAUCET_USDC_AMOUNT = BigInt(50_000_000); // 50 USDC (7 decimals)
 export const DEMO_PERIOD_SECONDS = 60;
 export const DEMO_CONTRIBUTION = 1_000_000; // 0.1 USDC
+export const DEMO_MAX_MEMBERS = 2;
+/** Shorter join window for sandbox; same day-based calculation as create. */
+export const DEMO_JOIN_WINDOW_DAYS = 1;
 
 export const DEFAULT_JOIN_WINDOW_DAYS = 30;
 export const PLATFORM_FEE_BPS = 100; // 1% on each payout

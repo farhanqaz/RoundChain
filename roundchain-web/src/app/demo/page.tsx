@@ -2,27 +2,35 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { CreateSummary } from "@/components/CreateSummary";
 import { SetupUsdcTrustline } from "@/components/SetupUsdcTrustline";
+import { ShareCircle } from "@/components/ShareCircle";
+import { TxResult } from "@/components/TxResult";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Alert } from "@/components/ui/Alert";
 import { useWallet } from "@/providers/WalletProvider";
-import { DEMO_CONTRIBUTION } from "@/lib/constants";
+import { useFeeConfig } from "@/hooks/useFeeConfig";
 import {
-  buildCreateCircleOp,
+  DEMO_CONTRIBUTION,
+  DEMO_JOIN_WINDOW_DAYS,
+  DEMO_MAX_MEMBERS,
+  DEMO_PERIOD_SECONDS,
+  USDC_TOKEN,
+} from "@/lib/constants";
+import {
   collateralForCircle,
   formatUsdc,
-  getNextCircleId,
+  getUsdcBalanceInfo,
   signWithFreighter,
-  simulateAndSend,
 } from "@/lib/contract";
+import { netPotAfterFee } from "@/lib/circle-logic";
 import {
-  CIRCLE_FAUCET_LINK,
-  checkWalletSetup,
-  dripXlmOnly,
-  joinInviteMessage,
-  whatsAppShare,
-} from "@/lib/setup";
-import { USDC_ISSUER, USDC_SAC } from "@/lib/usdc-assets";
+  demoCircleParams,
+  demoCircleValidation,
+  executeCreateCircle,
+  validateCreateCircle,
+} from "@/lib/create-circle";
+import { CIRCLE_FAUCET_LINK, checkWalletSetup, dripXlmOnly } from "@/lib/setup";
 import { CopyButton } from "@/components/CopyButton";
 import { PageShell } from "@/components/PageShell";
 
@@ -32,24 +40,33 @@ export default function DemoPage() {
   const { address, connect } = useWallet();
   const [xlmDone, setXlmDone] = useState(false);
   const [trustline, setTrustline] = useState(false);
-  const [usdcOk, setUsdcOk] = useState(false);
-  const [usdcBalance, setUsdcBalance] = useState<bigint>(BigInt(0));
+  const [usdcBalance, setUsdcBalance] = useState<bigint | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
   const [circleId, setCircleId] = useState<number | null>(null);
 
-  const minUsdc = BigInt(DEMO_CONTRIBUTION);
-  const demoCollateral = collateralForCircle(minUsdc, 2);
-  const minBalance = minUsdc > demoCollateral ? minUsdc : demoCollateral;
-  const stepIndex = !address ? 0 : !trustline ? 1 : !usdcOk ? 2 : circleId ? 4 : 3;
+  const feeBps = useFeeConfig();
+  const contributionAmount = BigInt(DEMO_CONTRIBUTION);
+  const collateralAmount = collateralForCircle(contributionAmount, DEMO_MAX_MEMBERS);
+  const grossPot = contributionAmount * BigInt(DEMO_MAX_MEMBERS - 1);
+  const netPot = netPotAfterFee(grossPot, feeBps);
+  const periodDuration = BigInt(DEMO_PERIOD_SECONDS);
+  const hasEnoughCollateral =
+    usdcBalance === null || usdcBalance >= collateralAmount;
+  const stepIndex = !address ? 0 : !trustline ? 1 : !hasEnoughCollateral ? 2 : circleId ? 4 : 3;
 
   const refresh = useCallback(async () => {
     if (!address) return;
-    const status = await checkWalletSetup(address, minBalance);
+    const status = await checkWalletSetup(address, BigInt(1_000_000));
     setTrustline(status.hasTrustline);
-    setUsdcBalance(status.usdcBalance);
-    setUsdcOk(status.ready);
-  }, [address, minBalance]);
+    try {
+      const info = await getUsdcBalanceInfo(address, USDC_TOKEN);
+      setUsdcBalance(info.balance);
+    } catch {
+      setUsdcBalance(null);
+    }
+  }, [address]);
 
   useEffect(() => {
     refresh();
@@ -63,21 +80,20 @@ export default function DemoPage() {
 
   const handleCreate = async () => {
     if (!address) return;
+
+    const validationError = validateCreateCircle(demoCircleValidation(usdcBalance));
+    if (validationError) return setError(validationError);
+
     setCreating(true);
     setError(null);
+    setTxHash(null);
     try {
-      const op = buildCreateCircleOp({
-        creator: address,
-        token: USDC_SAC,
-        contributionAmount: minUsdc,
-        periodDuration: BigInt(60),
-        maxMembers: 2,
-        minTrustScore: null,
-        joinDeadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
-      });
-      const { returnValue } = await simulateAndSend(address, signWithFreighter, op);
-      let id = returnValue != null ? Number(returnValue) : NaN;
-      if (isNaN(id)) id = (await getNextCircleId()) - 1;
+      const { hash, circleId: id } = await executeCreateCircle(
+        address,
+        signWithFreighter,
+        demoCircleParams(address)
+      );
+      setTxHash(hash);
       setCircleId(id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create practice circle");
@@ -86,7 +102,27 @@ export default function DemoPage() {
     }
   };
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  if (circleId != null) {
+    return (
+      <PageShell className="mx-auto max-w-xl space-y-6">
+        <PageHeader
+          backHref="/"
+          backLabel="Home"
+          label="Sandbox"
+          title={`Circle #${circleId}`}
+          description="You're enrolled. Invite one more person — the circle starts automatically when full."
+        />
+        <Alert variant="success" title="Practice circle ready">
+          Same on-chain flow as create — preset values for quick testing.
+        </Alert>
+        <ShareCircle circleId={circleId} />
+        <Link href={`/circle/${circleId}`} className="btn-primary block text-center text-sm">
+          View circle
+        </Link>
+        {txHash && <TxResult hash={txHash} />}
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell className="mx-auto max-w-xl space-y-8">
@@ -95,7 +131,7 @@ export default function DemoPage() {
         backLabel="Home"
         label="Sandbox"
         title="Practice circle"
-        description="Quick preset: 2 members, 60-second rounds, 0.1 USDC. You're enrolled when you create."
+        description="Quick preset on the same create flow: 2 members, 60-second rounds, 0.1 USDC. You're enrolled when you create."
         action={
           <Link href="/create" className="btn-ghost text-sm">
             Create circle →
@@ -131,12 +167,12 @@ export default function DemoPage() {
 
         <StepRow done={trustline} active={stepIndex === 1} title="Enable USDC">
           {address && !trustline && (
-            <SetupUsdcTrustline address={address} issuer={USDC_ISSUER} onSuccess={refresh} />
+            <SetupUsdcTrustline address={address} onSuccess={refresh} />
           )}
           {trustline && <p className="text-sm text-muted">USDC enabled</p>}
         </StepRow>
 
-        <StepRow done={usdcOk} active={stepIndex === 2} title="Fund balance">
+        <StepRow done={hasEnoughCollateral} active={stepIndex === 2} title="Fund balance">
           <p className="text-sm text-muted">
             Get testnet USDC from the Circle faucet (Stellar Testnet network).
           </p>
@@ -151,10 +187,11 @@ export default function DemoPage() {
                   Open faucet
                 </a>
               </div>
-              {trustline && (
+              {trustline && usdcBalance !== null && (
                 <p className="text-xs text-muted">
                   Balance: {formatUsdc(usdcBalance)} USDC
-                  {!usdcOk && ` · min. ${formatUsdc(minBalance)} (incl. collateral)`}
+                  {!hasEnoughCollateral &&
+                    ` · need ${formatUsdc(collateralAmount)} collateral`}
                 </p>
               )}
             </div>
@@ -162,55 +199,35 @@ export default function DemoPage() {
         </StepRow>
 
         <StepRow done={!!circleId} active={stepIndex === 3} title="Create practice circle" last>
-          {!circleId ? (
-            <>
-              <p className="text-sm text-muted">
-                Preset: 2 members · 60 seconds · 0.1 USDC · you join on create
-              </p>
-              <button
-                onClick={handleCreate}
-                disabled={creating || stepIndex !== 3}
-                className="btn-primary mt-3 w-full"
-              >
-                {creating ? "Processing…" : "Create practice circle"}
-              </button>
-            </>
-          ) : (
-            <SuccessPanel circleId={circleId} origin={origin} />
+          <CreateSummary
+            periodDuration={periodDuration}
+            collateralAmount={collateralAmount}
+            netPot={netPot}
+            feeBps={feeBps}
+            contributorCount={DEMO_MAX_MEMBERS - 1}
+            joinDays={DEMO_JOIN_WINDOW_DAYS}
+            usdcBalance={usdcBalance}
+            hasEnoughCollateral={hasEnoughCollateral}
+          />
+          {!hasEnoughCollateral && usdcBalance !== null && (
+            <div className="mt-3">
+              <Alert variant="warning">
+                Need {formatUsdc(collateralAmount)} USDC collateral to create this circle.
+              </Alert>
+            </div>
           )}
+          <button
+            onClick={handleCreate}
+            disabled={creating || stepIndex !== 3 || !hasEnoughCollateral}
+            className="btn-primary mt-3 w-full"
+          >
+            {creating ? "Processing…" : "Create practice circle"}
+          </button>
         </StepRow>
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
     </PageShell>
-  );
-}
-
-function SuccessPanel({
-  circleId,
-  origin,
-}: {
-  circleId: number;
-  origin: string;
-}) {
-  const joinUrl = `${origin}/join/${circleId}`;
-  const waLink = whatsAppShare(joinInviteMessage(circleId, origin));
-
-  return (
-    <div className="space-y-4">
-      <Alert variant="success" title={`Circle #${circleId} is ready`}>
-        You&apos;re enrolled. Invite one more person — the circle starts automatically when full.
-      </Alert>
-      <div className="flex gap-2">
-        <CopyButton text={joinUrl} label="Copy invite" />
-        <a href={waLink} target="_blank" rel="noopener noreferrer" className="btn-success flex-1 py-2 text-center text-xs">
-          WhatsApp
-        </a>
-      </div>
-      <Link href={`/circle/${circleId}`} className="btn-primary block text-center text-sm">
-        View circle
-      </Link>
-    </div>
   );
 }
 

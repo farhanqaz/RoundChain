@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ConnectWallet } from "@/components/ConnectWallet";
+import { CreateSummary } from "@/components/CreateSummary";
 import { SetupUsdcTrustline } from "@/components/SetupUsdcTrustline";
 import { ShareCircle } from "@/components/ShareCircle";
 import { PageShell } from "@/components/PageShell";
@@ -19,16 +20,18 @@ import {
 } from "@/lib/constants";
 import { useFeeConfig } from "@/hooks/useFeeConfig";
 import {
-  buildCreateCircleOp,
   collateralForCircle,
   formatUsdc,
-  formatUsdcDisplay,
-  getNextCircleId,
   getUsdcBalanceInfo,
   signWithFreighter,
-  simulateAndSend,
 } from "@/lib/contract";
-import { netPotAfterFee, formatFeePercent } from "@/lib/circle-logic";
+import { netPotAfterFee } from "@/lib/circle-logic";
+import {
+  executeCreateCircle,
+  joinDeadlineFromDays,
+  regularCreateValidation,
+  validateCreateCircle,
+} from "@/lib/create-circle";
 import { checkWalletSetup, dripXlmOnly } from "@/lib/setup";
 
 const PERIOD_PRESETS = [
@@ -36,8 +39,6 @@ const PERIOD_PRESETS = [
   { days: 14, label: "Bi-weekly" },
   { days: 30, label: "Monthly" },
 ] as const;
-
-const MAX_MEMBERS = 50;
 
 export default function CreateCirclePage() {
   const { address } = useWallet();
@@ -63,6 +64,7 @@ export default function CreateCirclePage() {
   const parsedPeriodDays = parseInt(periodDays, 10);
   const parsedJoinDays = parseInt(joinWindowDays, 10);
   const isPresetPeriod = PERIOD_PRESETS.some((p) => p.days === parsedPeriodDays);
+  const periodDuration = BigInt(Math.max(0, parsedPeriodDays) * 86400);
   const hasEnoughCollateral =
     usdcBalance === null || usdcBalance >= collateralAmount;
 
@@ -89,53 +91,36 @@ export default function CreateCirclePage() {
   const handleCreate = async () => {
     if (!address) return;
     const members = parseInt(maxMembers, 10);
-
-    if (contributionAmount <= BigInt(0)) return setError("Contribution must be greater than 0");
-    if (members < 2) return setError("At least 2 members required");
-    if (members > MAX_MEMBERS) return setError(`Maximum ${MAX_MEMBERS} members`);
-    if (!Number.isFinite(parsedPeriodDays) || parsedPeriodDays < 1) {
-      return setError("Round length must be at least 1 day");
-    }
-    if (!Number.isFinite(parsedJoinDays) || parsedJoinDays < 1) {
-      return setError("Join window must be at least 1 day");
-    }
-    const periodDuration = BigInt(parsedPeriodDays * 86400);
-
     const trustParsed = minTrustScore.trim() === "" ? null : parseInt(minTrustScore, 10);
-    if (trustParsed != null && (!Number.isFinite(trustParsed) || trustParsed < 0)) {
-      return setError("Trust score must be a non-negative number");
-    }
 
-    if (usdcBalance !== null && usdcBalance < collateralAmount) {
-      return setError(
-        `Need ${formatUsdc(collateralAmount)} USDC collateral to create (you have ${formatUsdc(usdcBalance)})`
-      );
-    }
-
-    const joinDeadline = BigInt(
-      Math.floor(Date.now() / 1000) + parsedJoinDays * 86400
+    const validationError = validateCreateCircle(
+      regularCreateValidation(
+        contributionAmount,
+        members,
+        periodDuration,
+        parsedJoinDays,
+        trustParsed,
+        usdcBalance
+      )
     );
+    if (validationError) return setError(validationError);
 
     setLoading(true);
     setError(null);
     setTxHash(null);
 
     try {
-      const op = buildCreateCircleOp({
+      const { hash, circleId } = await executeCreateCircle(address, signWithFreighter, {
         creator: address,
         token: USDC_TOKEN,
         contributionAmount,
         periodDuration,
         maxMembers: members,
         minTrustScore: trustParsed,
-        joinDeadline,
+        joinDeadline: joinDeadlineFromDays(parsedJoinDays),
       });
-
-      const { hash, returnValue } = await simulateAndSend(address, signWithFreighter, op);
       setTxHash(hash);
-      let id = returnValue != null ? Number(returnValue) : NaN;
-      if (isNaN(id)) id = (await getNextCircleId()) - 1;
-      setCreatedId(id);
+      setCreatedId(circleId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create circle");
     } finally {
@@ -207,7 +192,7 @@ export default function CreateCirclePage() {
               <input
                 type="number"
                 min={2}
-                max={MAX_MEMBERS}
+                max={50}
                 value={maxMembers}
                 onChange={(e) => setMaxMembers(e.target.value)}
                 className="input"
@@ -291,7 +276,7 @@ export default function CreateCirclePage() {
             )}
 
             <CreateSummary
-              periodDays={parsedPeriodDays}
+              periodDuration={periodDuration}
               collateralAmount={collateralAmount}
               netPot={netPot}
               feeBps={feeBps}
@@ -320,94 +305,5 @@ export default function CreateCirclePage() {
 
       {error && <Alert variant="error">{error}</Alert>}
     </PageShell>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  emphasize = true,
-}: {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-6 px-4 py-3 text-sm">
-      <span className="text-muted">{label}</span>
-      <span
-        className={`shrink-0 text-right tabular-nums ${emphasize ? "font-medium text-foreground" : "text-muted"}`}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function CreateSummary({
-  periodDays,
-  collateralAmount,
-  netPot,
-  feeBps,
-  contributorCount,
-  joinDays,
-  usdcBalance,
-  hasEnoughCollateral,
-}: {
-  periodDays: number;
-  collateralAmount: bigint;
-  netPot: bigint;
-  feeBps: number;
-  contributorCount: number;
-  joinDays: number;
-  usdcBalance: bigint | null;
-  hasEnoughCollateral: boolean;
-}) {
-  return (
-    <div className="overflow-hidden rounded-md border border-border bg-muted-surface text-sm">
-      <SummaryRow
-        label="Round period"
-        value={periodDays >= 1 ? `${periodDays} days` : "—"}
-      />
-      <div className="border-t border-border">
-        <SummaryRow
-          label="Collateral on create"
-          value={`${formatUsdcDisplay(collateralAmount)} USDC`}
-        />
-      </div>
-      <div className="border-t border-border px-4 py-3">
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-muted">Pot each round (net)</span>
-          <span className="shrink-0 text-right font-medium tabular-nums text-foreground">
-            ≈ {formatUsdcDisplay(netPot)} USDC
-          </span>
-        </div>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
-          {contributorCount} contributor{contributorCount !== 1 ? "s" : ""} pay per round ·
-          recipient exempt · {formatFeePercent(feeBps)} platform fee
-        </p>
-      </div>
-      <div className="border-t border-border">
-        <SummaryRow
-          label="Join window"
-          value={joinDays >= 1 ? `${joinDays} days` : "—"}
-          emphasize={false}
-        />
-      </div>
-      {usdcBalance !== null && (
-        <div className="border-t border-border">
-          <div className="flex items-center justify-between gap-6 px-4 py-3 text-sm">
-            <span className="text-muted">Your USDC balance</span>
-            <span
-              className={`shrink-0 text-right tabular-nums ${
-                hasEnoughCollateral ? "font-medium text-foreground" : "text-foreground/60"
-              }`}
-            >
-              {formatUsdcDisplay(usdcBalance)} USDC
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
