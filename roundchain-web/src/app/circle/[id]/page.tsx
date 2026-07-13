@@ -52,7 +52,16 @@ export default function CirclePage() {
             backHref="/circles"
             backLabel="Browse circles"
             title={`Circle #${circleId}`}
-            badge={<StatusBadge status={circle.status} />}
+            badge={
+              <StatusBadge
+                status={circle.status}
+                joinClosed={
+                  circle.status === "Pending" &&
+                  circle.join_deadline > BigInt(0) &&
+                  isJoinDeadlinePassed(circle.join_deadline)
+                }
+              />
+            }
             action={undefined}
           />
 

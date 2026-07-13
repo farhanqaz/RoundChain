@@ -13,6 +13,7 @@ import { useFeeConfig } from "@/hooks/useFeeConfig";
 import { CircleFlowViz } from "@/components/CircleFlowViz";
 import { MemberSeatGrid } from "@/components/MemberSeatGrid";
 import { AnimatedProgress } from "@/components/ui/AnimatedProgress";
+import { Alert } from "@/components/ui/Alert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface Props {
@@ -35,10 +36,18 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
     circle.status === "Pending"
       ? collateralForCircle(circle.contribution_amount, circle.max_members)
       : BigInt(0);
+  const joinClosed =
+    circle.status === "Pending" &&
+    circle.join_deadline > BigInt(0) &&
+    isJoinDeadlinePassed(circle.join_deadline);
   const joinOpen =
     circle.status === "Pending" &&
     circle.join_deadline > BigInt(0) &&
-    !isJoinDeadlinePassed(circle.join_deadline);
+    !joinClosed;
+  const joinIncomplete =
+    circle.status === "Pending" &&
+    circle.member_count > 0 &&
+    circle.member_count < circle.max_members;
   const progress =
     circle.total_rounds > 0
       ? Math.round((circle.current_round / circle.total_rounds) * 100)
@@ -57,7 +66,7 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
             {formatUsdc(circle.contribution_amount)} USDC <span className="text-muted">/ round</span>
           </h1>
           <div className="mt-3">
-            <StatusBadge status={circle.status} />
+            <StatusBadge status={circle.status} joinClosed={joinClosed} />
           </div>
         </div>
         {circle.status === "Active" && (
@@ -80,6 +89,13 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
           </div>
           <AnimatedProgress value={progress} highlight />
         </div>
+      )}
+
+      {joinClosed && joinIncomplete && (
+        <Alert variant="warning" title="Join window closed">
+          This circle did not fill in time. Anyone can cancel to refund deposited collateral — funds
+          are not lost.
+        </Alert>
       )}
 
       {circle.status === "Pending" && (
@@ -197,6 +213,12 @@ function paymentStatus(
   const displayRound = currentRound + 1;
   if (entry.is_slashed) return { label: "Collateral forfeited", paid: false, slashed: true, receiving: false };
   if (entry.is_exited_clean) return { label: "Prepaid · exited", paid: true, slashed: false, receiving: false };
+  if (!isActive) {
+    if (entry.collateral_deposited > BigInt(0)) {
+      return { label: "Collateral deposited", paid: true, slashed: false, receiving: false };
+    }
+    return { label: "Enrolled", paid: false, slashed: false, receiving: false };
+  }
   if (isActive && isScheduledRecipient(entry.address, payoutOrder, currentRound)) {
     return { label: `Receiving round ${displayRound}`, paid: true, slashed: false, receiving: true };
   }
@@ -357,8 +379,8 @@ function PayoutTracker({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {payoutOrder.map((addr, i) => {
-          const isCurrent = i === currentRound;
-          const isPast = i < currentRound;
+          const isCurrent = status === "Active" && i === currentRound;
+          const isPast = status === "Active" && i < currentRound;
           return (
             <div
               key={`${addr}-${i}`}
@@ -371,9 +393,18 @@ function PayoutTracker({
               }`}
               style={{ animationDelay: `${0.2 + i * 0.05}s` }}
             >
-              <span className="text-muted">Round {i + 1} ·</span> {shortenAddress(addr, 4)}
-              {isCurrent && <span className="ml-1 text-muted">· receiving now</span>}
-              {!isCurrent && !isPast && <span className="ml-1 text-muted">· receives later</span>}
+              {status === "Pending" ? (
+                <>
+                  <span className="text-muted">Seat {i + 1} ·</span> {shortenAddress(addr, 4)}
+                  <span className="ml-1 text-muted">· enrolled</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-muted">Round {i + 1} ·</span> {shortenAddress(addr, 4)}
+                  {isCurrent && <span className="ml-1 text-muted">· receiving now</span>}
+                  {!isCurrent && !isPast && <span className="ml-1 text-muted">· receives later</span>}
+                </>
+              )}
             </div>
           );
         })}

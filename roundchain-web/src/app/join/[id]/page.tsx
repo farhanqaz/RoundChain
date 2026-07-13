@@ -36,6 +36,11 @@ export default function JoinCirclePage() {
 
   const circle = data?.circle;
   const seatsLeft = circle ? circle.max_members - circle.member_count : 0;
+  const joinClosed =
+    !!circle &&
+    circle.status === "Pending" &&
+    circle.join_deadline > BigInt(0) &&
+    isJoinDeadlinePassed(circle.join_deadline);
 
   return (
     <PageShell className="space-y-8">
@@ -43,10 +48,14 @@ export default function JoinCirclePage() {
         label="Invite"
         title={`Circle #${circleId}`}
         description="Deposit collateral once when you join, then pay each round until your payout turn."
-        badge={circle ? <StatusBadge status={circle.status} /> : undefined}
+        badge={
+          circle ? (
+            <StatusBadge status={circle.status} joinClosed={joinClosed} />
+          ) : undefined
+        }
       />
 
-      {circle?.status === "Pending" && seatsLeft > 0 && (
+      {circle?.status === "Pending" && seatsLeft > 0 && !joinClosed && (
         <p className="-mt-4 pill-amber w-fit">{seatsLeft} seat{seatsLeft !== 1 ? "s" : ""} left</p>
       )}
 

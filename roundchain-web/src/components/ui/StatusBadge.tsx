@@ -1,7 +1,7 @@
 import { CircleStatus } from "@/lib/contract";
 
 const labels: Record<CircleStatus, string> = {
-  Pending: "Open",
+  Pending: "Open for members",
   Active: "Active",
   Completed: "Done",
   Cancelled: "Cancelled",
@@ -14,9 +14,19 @@ const dotClass: Record<CircleStatus, string> = {
   Cancelled: "bg-muted",
 };
 
-export function StatusBadge({ status }: { status: CircleStatus | string }) {
+export function StatusBadge({
+  status,
+  joinClosed,
+}: {
+  status: CircleStatus | string;
+  /** When Pending and the join deadline has passed */
+  joinClosed?: boolean;
+}) {
   const key = status as CircleStatus;
-  const label = labels[key] ?? status;
+  let label = labels[key] ?? status;
+  if (key === "Pending" && joinClosed) {
+    label = "Join closed";
+  }
   const dot = dotClass[key] ?? "bg-muted";
 
   return (

@@ -9,6 +9,7 @@ import { AnimatedProgress } from "@/components/ui/AnimatedProgress";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { IconArrowRight, IconUsers } from "@/components/icons";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { isJoinDeadlinePassed } from "@/lib/circle-logic";
 import { CONTRACT_ID } from "@/lib/constants";
 import { CircleState, formatPeriod, formatUsdc, listCircles } from "@/lib/contract";
 
@@ -59,7 +60,14 @@ export default function CirclesPage() {
 
       <ul className="space-y-3">
         {circles.map(({ id, circle }, index) => {
-          const open = circle.status === "Pending" && circle.member_count < circle.max_members;
+          const joinClosed =
+            circle.status === "Pending" &&
+            circle.join_deadline > BigInt(0) &&
+            isJoinDeadlinePassed(circle.join_deadline);
+          const open =
+            circle.status === "Pending" &&
+            circle.member_count < circle.max_members &&
+            !joinClosed;
           const fillPct = Math.round((circle.member_count / circle.max_members) * 100);
           const stagger = Math.min(index + 1, 8);
           return (
@@ -88,7 +96,7 @@ export default function CirclesPage() {
                     </span>
                   </div>
                 </div>
-                <StatusBadge status={circle.status} />
+                <StatusBadge status={circle.status} joinClosed={joinClosed} />
               </Link>
             </li>
           );
