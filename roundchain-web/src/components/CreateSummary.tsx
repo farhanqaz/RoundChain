@@ -65,7 +65,7 @@ export function CreateSummary({
       <div className="border-t border-border">
         <SummaryRow
           label="Join window"
-          value={joinDays >= 1 ? `${joinDays} days` : "—"}
+          value={joinDays >= 1 ? `${joinDays} days` : "-"}
           emphasize={false}
         />
       </div>

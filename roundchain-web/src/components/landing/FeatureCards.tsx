@@ -29,7 +29,7 @@ export function FeatureCards() {
       id="features"
       label="Why RoundChain"
       title="Built for trustless savings"
-      description="Collateral, reputation, and fair order — enforced by smart contract, not group chat."
+      description="Collateral, reputation, and fair order - enforced by smart contract, not group chat."
     >
       <div className="grid gap-3 sm:grid-cols-1 md:grid-divider md:grid-cols-3">
         {FEATURES.map(({ title, desc, Illustration }, i) => (

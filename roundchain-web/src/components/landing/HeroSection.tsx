@@ -18,7 +18,7 @@ export function HeroSection() {
           Savings circles with rules you can trust
         </h1>
         <p className="animate-fade-up-delay-2 max-w-md text-[15px] leading-7 text-muted sm:text-base">
-          RoundChain runs rotating savings circles on Stellar Soroban — with on-chain financial
+          RoundChain runs rotating savings circles on Stellar Soroban - with on-chain financial
           reputation for people who have no traditional credit score.
         </p>
         <div className="animate-fade-up-delay-3 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">

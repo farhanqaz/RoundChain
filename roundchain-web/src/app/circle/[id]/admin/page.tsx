@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-/** Legacy route — all circle actions live on the main dashboard. */
+/** Legacy route - all circle actions live on the main dashboard. */
 export default function CircleAdminRedirectPage() {
   const params = useParams();
   const router = useRouter();

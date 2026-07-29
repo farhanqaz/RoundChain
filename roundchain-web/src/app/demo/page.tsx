@@ -110,10 +110,10 @@ export default function DemoPage() {
           backLabel="Home"
           label="Sandbox"
           title={`Circle #${circleId}`}
-          description="You're enrolled. Invite one more person — the circle starts automatically when full."
+          description="You're enrolled. Invite one more person - the circle starts automatically when full."
         />
         <Alert variant="success" title="Practice circle ready">
-          Same on-chain flow as create — preset values for quick testing.
+          Same on-chain flow as create - preset values for quick testing.
         </Alert>
         <ShareCircle circleId={circleId} />
         <Link href={`/circle/${circleId}`} className="btn-primary block text-center text-sm">

@@ -1,4 +1,4 @@
-/** Shared logo sizes — nav (header), card (dashboard previews), display (marketing). */
+/** Shared logo sizes - nav (header), card (dashboard previews), display (marketing). */
 export const LOGO_SIZE = {
   nav: 40,
   compact: 32,

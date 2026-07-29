@@ -71,7 +71,7 @@ export function CircleFlowViz({
         >
           <p className="text-[10px] uppercase tracking-wide text-muted">Recipient</p>
           <p className="mt-0.5 font-mono text-sm text-foreground">
-            {recipient ? shortenAddress(recipient, 6) : "—"}
+            {recipient ? shortenAddress(recipient, 6) : "-"}
           </p>
           <p className="mt-1 text-[10px] text-muted">
             {paidCount}/{contributors.length} paid · {formatUsdc(contributionAmount)}/each

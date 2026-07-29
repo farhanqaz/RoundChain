@@ -1,4 +1,4 @@
-# RoundChain — Web Client
+# RoundChain - Web Client
 
 Production-facing interface for the RoundChain ROSCA protocol. Connects to Soroban via RPC, signs transactions through Freighter, and surfaces circle state, member actions, and on-chain trust scores.
 
@@ -54,10 +54,10 @@ Circles auto-start when the last member joins. Invite link is hidden when the ci
 
 ## UX Highlights
 
-- **Recipient turn** — no Pay button; shows “waiting for contributors”
-- **Pot display** — net amount after on-chain fee (`get_fee_config`)
-- **Flow visualization** — round progress, contributor status, payout order
-- **Trust badge** — live score in header when wallet connected
+- **Recipient turn** - no Pay button; shows “waiting for contributors”
+- **Pot display** - net amount after on-chain fee (`get_fee_config`)
+- **Flow visualization** - round progress, contributor status, payout order
+- **Trust badge** - live score in header when wallet connected
 
 ## Wallet Setup (Testnet)
 

@@ -134,7 +134,7 @@ export default function CreateCirclePage() {
         <PageHeader
           label="Success"
           title={`Circle #${createdId}`}
-          description="You're enrolled as a member. Share the link — the circle starts when full."
+          description="You're enrolled as a member. Share the link - the circle starts when full."
         />
         <div className="animate-scale-in">
           <ShareCircle circleId={createdId} />
@@ -188,7 +188,7 @@ export default function CreateCirclePage() {
           )}
 
           <div className="card stagger-item stagger-2 space-y-6 p-6">
-            <FormField label="How many members?" hint="Including you — enrolled on create">
+            <FormField label="How many members?" hint="Including you - enrolled on create">
               <input
                 type="number"
                 min={2}

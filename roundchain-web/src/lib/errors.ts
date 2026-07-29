@@ -10,7 +10,7 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   9: "Not enough members to start",
   10: "You already paid this round",
   11: "Member collateral was slashed",
-  12: "Round period has not ended yet — please wait",
+  12: "Round period has not ended yet - please wait",
   13: "Cannot slash this member",
   14: "Member already slashed",
   15: "Collateral already claimed",
@@ -18,35 +18,35 @@ export const CONTRACT_ERRORS: Record<number, string> = {
   17: "Minimum 2 members required",
   18: "Invalid period duration",
   19: "Payout already received",
-  20: "Trust score too low — complete circles to build reputation",
+  20: "Trust score too low - complete circles to build reputation",
   21: "Not all contributors have paid this round",
   22: "Scheduled recipient has not paid this round",
   23: "Circle was cancelled",
   24: "Join deadline has passed",
   25: "You are not a member of this circle",
-  26: "Cannot cancel this circle — wait for join deadline or leave individually",
-  27: "Invalid token — only Circle USDC is allowed",
+  26: "Cannot cancel this circle - wait for join deadline or leave individually",
+  27: "Invalid token - only Circle USDC is allowed",
   28: "Cannot exit before the round period ends (pay this round or wait)",
   29: "Use complete exit after receiving your payout",
   30: "Member already exited this circle",
   31: "Contract already initialized",
-  32: "Contract not initialized — redeploy and run init",
+  32: "Contract not initialized - redeploy and run init",
   33: "Complete exit requires receiving a payout first",
-  34: "Invalid platform fee — must be 0–500 basis points",
+  34: "Invalid platform fee - must be 0-500 basis points",
   35: "Scheduled recipient cannot pay on their payout round",
 };
 
 const TOKEN_ERRORS: Record<number, string> = {
-  13: "USDC trustline not active — enable it in setup first",
+  13: "USDC trustline not active - enable it in setup first",
 };
 
 function extractDiagnosticText(raw: unknown): string {
   const text = typeof raw === "string" ? raw : JSON.stringify(raw);
   if (text.includes("trustline entry is missing")) {
-    return "USDC trustline not active — click Enable USDC on the setup page";
+    return "USDC trustline not active - click Enable USDC on the setup page";
   }
   if (text.includes("insufficient balance") || text.includes("InsufficientBalance")) {
-    return "Insufficient USDC balance — get testnet USDC from Circle faucet";
+    return "Insufficient USDC balance - get testnet USDC from Circle faucet";
   }
   return text;
 }
@@ -64,17 +64,17 @@ export function parseContractError(raw: unknown): string {
   }
 
   if (text.includes("CircleNotFound") || text.includes("not found")) {
-    return "Circle not found — check the circle ID";
+    return "Circle not found - check the circle ID";
   }
   if (text.includes("User rejected") || text.includes("rejected")) {
     return "Transaction rejected in Freighter";
   }
   if (text.includes("Simulation failed")) {
-    return "Simulation failed — check USDC trustline and balance";
+    return "Simulation failed - check USDC trustline and balance";
   }
 
   if (text.length > 200) {
-    return "Transaction failed — check Freighter and try again";
+    return "Transaction failed - check Freighter and try again";
   }
   return text;
 }

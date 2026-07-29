@@ -9,7 +9,7 @@ function IllusFrame({ children, compact = false }: { children: ReactNode; compac
   );
 }
 
-/** Step 1 — circle ring forms, center anchor appears */
+/** Step 1 - circle ring forms, center anchor appears */
 export function CreateCircleIllus() {
   return (
     <IllusFrame>
@@ -34,7 +34,7 @@ export function CreateCircleIllus() {
   );
 }
 
-/** Step 2 — seats fill as members join */
+/** Step 2 - seats fill as members join */
 export function InviteMembersIllus() {
   const seats = [0, 1, 2, 3];
   return (
@@ -83,7 +83,7 @@ export function InviteMembersIllus() {
   );
 }
 
-/** Step 3 — contributors pay into pot, recipient receives */
+/** Step 3 - contributors pay into pot, recipient receives */
 export function RunRoundsIllus() {
   return (
     <IllusFrame>

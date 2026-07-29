@@ -209,7 +209,7 @@ impl RoundChainContract {
         write_circle(&env, circle_id, &circle);
     }
 
-    /// Voluntary exit before receiving payout — forfeits collateral (default).
+    /// Voluntary exit before receiving payout - forfeits collateral (default).
     pub fn exit_circle(env: Env, circle_id: u32, member: Address) {
         member.require_auth();
 
@@ -238,7 +238,7 @@ impl RoundChainContract {
         Self::slash_member(&env, circle_id, &member, true);
     }
 
-    /// Exit after receiving payout — prepay remaining rounds so others keep full pots.
+    /// Exit after receiving payout - prepay remaining rounds so others keep full pots.
     pub fn complete_exit(env: Env, circle_id: u32, member: Address) {
         member.require_auth();
 
@@ -383,7 +383,7 @@ impl RoundChainContract {
             if recipient_state.has_received_payout {
                 panic_with_error!(&env, RoundChainError::AlreadyReceivedPayout);
             }
-            // Recipient is exempt from paying this round — keep round counter in sync.
+            // Recipient is exempt from paying this round - keep round counter in sync.
             if recipient_state.contributions_paid <= circle.current_round {
                 recipient_state.contributions_paid = circle.current_round + 1;
             }

@@ -28,7 +28,7 @@ export function SetupUsdcTrustline({ address, issuer, onSuccess }: Props) {
       setDone(true);
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed — try again in Freighter");
+      setError(e instanceof Error ? e.message : "Failed - try again in Freighter");
     } finally {
       setLoading(false);
     }

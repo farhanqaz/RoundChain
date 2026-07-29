@@ -4,7 +4,7 @@
 
 **On-chain rotating savings circles with portable financial reputation.**
 
-RoundChain is a Soroban smart contract and web interface that brings ROSCA (rotating savings and credit association) mechanics — commonly known as *arisan* across Southeast Asia — onto Stellar. Collateral, payout order, contributions, and member reputation are enforced by contract logic rather than social trust alone.
+RoundChain is a Soroban smart contract and web interface that brings ROSCA (rotating savings and credit association) mechanics - commonly known as *arisan* across Southeast Asia - onto Stellar. Collateral, payout order, contributions, and member reputation are enforced by contract logic rather than social trust alone.
 
 Built for the **APAC Stellar Hackathon** (Rise In × Stellar Development Foundation) · **Local Finance & Real World Access** track.
 
@@ -28,10 +28,10 @@ RoundChain implements a full ROSCA lifecycle on Soroban:
 | Capability | Implementation |
 |---|---|
 | **Collateral escrow** | USDC locked at join; released after circle completion or clean exit |
-| **Fair payout order** | Fisher–Yates shuffle via Soroban PRNG when the last member joins |
-| **Auto-start** | No admin gate — circle activates when full |
+| **Fair payout order** | Fisher-Yates shuffle via Soroban PRNG when the last member joins |
+| **Auto-start** | No admin gate - circle activates when full |
 | **Round enforcement** | n−1 contributors pay each round; scheduled recipient is exempt. Permissionless slashing after period ends |
-| **Default handling** | Pot scales to active contributors only — no inflated payouts when someone is slashed |
+| **Default handling** | Pot scales to active contributors only - no inflated payouts when someone is slashed |
 | **Financial reputation** | Persistent trust score; optional minimum score gates entry (applies to creator and joiners) |
 | **Platform fee** | Configurable per deploy (default 1%, max 5%); read on-chain via `get_fee_config` |
 
@@ -65,11 +65,11 @@ The result is a savings protocol that preserves the social model of arisan while
 
 ### Circle lifecycle
 
-1. **Configure** — Set members, contribution per round, and round length (weekly / bi-weekly / monthly / custom). Optional min trust score and join window in advanced settings.
-2. **Enroll** — Creator is enrolled automatically on create (must meet min trust if set); others join via invite link and deposit collateral. **Leave** anytime while Pending for a full refund.
-3. **Activate** — When the last member joins, payout order is shuffled on-chain and the circle becomes Active.
-4. **Operate** — Each round, every active member **except the scheduled recipient** must contribute. Anyone can trigger payout once all obligated contributors paid and the period ended.
-5. **Resolve** — After your payout turn, use **complete exit** to prepay remaining rounds and reclaim collateral. Trust +10 is credited when the circle completes.
+1. **Configure** - Set members, contribution per round, and round length (weekly / bi-weekly / monthly / custom). Optional min trust score and join window in advanced settings.
+2. **Enroll** - Creator is enrolled automatically on create (must meet min trust if set); others join via invite link and deposit collateral. **Leave** anytime while Pending for a full refund.
+3. **Activate** - When the last member joins, payout order is shuffled on-chain and the circle becomes Active.
+4. **Operate** - Each round, every active member **except the scheduled recipient** must contribute. Anyone can trigger payout once all obligated contributors paid and the period ended.
+5. **Resolve** - After your payout turn, use **complete exit** to prepay remaining rounds and reclaim collateral. Trust +10 is credited when the circle completes.
 
 Circles still Pending can be **cancelled** by the creator (if empty), or by anyone after the join deadline.
 
@@ -87,7 +87,7 @@ RoundChain maintains a per-address reputation ledger in contract storage. Scores
 | **Complete exit** after payout (credited when circle completes) | +10 |
 | Member slashed for non-payment | −25 (immediate) |
 
-Circle creators may require a minimum score at creation time — **the creator must meet it too**. This enables tiered pools without off-chain credit bureaus.
+Circle creators may require a minimum score at creation time - **the creator must meet it too**. This enables tiered pools without off-chain credit bureaus.
 
 ```rust
 score = max(0, completed × 10 − defaulted × 25)
