@@ -49,6 +49,14 @@ export default function AboutPage() {
           <PlatformFeeNote suffix=" platform fee" /> applies on each payout release (read from the
           contract). Complete circles to build an on-chain trust score.
         </p>
+        <a
+          href={PRODUCT_GUIDE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary mt-6 inline-block text-sm"
+        >
+          Product guide
+        </a>
       </div>
 
       <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-3">
@@ -112,17 +120,6 @@ export default function AboutPage() {
             </span>
           </li>
         </ol>
-        <p className="mt-4 text-sm text-muted">
-          New here?{" "}
-          <a
-            href={PRODUCT_GUIDE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-foreground underline underline-offset-2"
-          >
-            Product guide
-          </a>
-        </p>
       </div>
 
       <div className="border border-border bg-card overflow-hidden">
