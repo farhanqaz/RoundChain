@@ -28,9 +28,6 @@ export function Footer() {
           </div>
           <div className="space-y-2">
             <p className="text-muted">Info</p>
-            <Link href="/guide" className="block text-muted transition hover:text-foreground">
-              Guide
-            </Link>
             <Link href="/about" className="block text-muted transition hover:text-foreground">
               About
             </Link>

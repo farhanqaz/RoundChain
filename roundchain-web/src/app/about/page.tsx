@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
-import { ExternalDocCard } from "@/components/ExternalDocCard";
 import { PageShell } from "@/components/PageShell";
 import { PlatformFeeNote } from "@/components/PlatformFeeNote";
 import { IconLock, IconList, IconShield } from "@/components/icons";
@@ -13,7 +12,7 @@ import {
   SOROBAN_RPC,
   USDC_TOKEN,
 } from "@/lib/constants";
-import { PRODUCT_GUIDE_PDF_URL, PRODUCT_GUIDE_URL } from "@/lib/external-links";
+import { PRODUCT_GUIDE_URL } from "@/lib/external-links";
 import { server } from "@/lib/contract";
 
 const VALUES = [
@@ -50,34 +49,6 @@ export default function AboutPage() {
           <PlatformFeeNote suffix=" platform fee" /> applies on each payout release (read from the
           contract). Complete circles to build an on-chain trust score.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/guide" className="btn-primary text-sm">
-            Read the guide
-          </Link>
-          <a
-            href={PRODUCT_GUIDE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary text-sm"
-          >
-            Open full docs
-          </a>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ExternalDocCard
-          href={PRODUCT_GUIDE_URL}
-          title="Product guide (Google Docs)"
-          description="Plain-language walkthrough for new users."
-          buttonLabel="Open guide"
-        />
-        <ExternalDocCard
-          href={PRODUCT_GUIDE_PDF_URL}
-          title="Product guide (PDF)"
-          description="Download or share the same guide offline."
-          buttonLabel="Open PDF"
-        />
       </div>
 
       <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-3">
@@ -141,6 +112,17 @@ export default function AboutPage() {
             </span>
           </li>
         </ol>
+        <p className="mt-4 text-sm text-muted">
+          New here?{" "}
+          <a
+            href={PRODUCT_GUIDE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-foreground underline underline-offset-2"
+          >
+            Product guide
+          </a>
+        </p>
       </div>
 
       <div className="border border-border bg-card overflow-hidden">

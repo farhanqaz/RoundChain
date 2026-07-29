@@ -31,9 +31,6 @@ export function Header() {
           <Link href="/demo" className="nav-link">
             Sandbox
           </Link>
-          <Link href="/guide" className="nav-link">
-            Guide
-          </Link>
           <Link href="/about" className="nav-link">
             About
           </Link>
@@ -98,9 +95,6 @@ export function Header() {
             </Link>
             <Link href="/demo" onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm text-muted">
               Sandbox
-            </Link>
-            <Link href="/guide" onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm text-muted">
-              Guide
             </Link>
             <Link href="/about" onClick={() => setMenuOpen(false)} className="block py-2.5 text-sm text-muted">
               About
