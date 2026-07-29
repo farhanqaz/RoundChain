@@ -85,7 +85,7 @@ describe("round pot", () => {
     ).toBe(BigInt(20_000_000));
   });
 
-  it("excludes slashed members - pot is active contributors only", () => {
+  it("excludes slashed members, pot is active contributors only", () => {
     const members = MEMBERS([false, true, true]);
     members[2].is_slashed = true;
     members[2].paid = false;

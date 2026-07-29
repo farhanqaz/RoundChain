@@ -124,7 +124,7 @@ export function allContributorsPaid(
   );
 }
 
-/** @deprecated use allContributorsPaid - kept for tests */
+/** @deprecated use allContributorsPaid, kept for tests */
 export function allActivePaid(members: MemberDetail[]): boolean {
   const active = activeMembers(members);
   return active.length > 0 && active.every((m) => m.paid);

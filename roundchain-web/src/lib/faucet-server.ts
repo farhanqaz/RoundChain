@@ -25,7 +25,7 @@ function parseTransferSimulationError(simulated: rpc.Api.SimulateTransactionResp
     raw.includes("Underfunded") ||
     raw.includes("InsufficientBalance")
   ) {
-    return "Faucet wallet empty - fund via Circle faucet";
+    return "Faucet wallet empty, fund via Circle faucet";
   }
   const err =
     typeof simulated === "object" &&

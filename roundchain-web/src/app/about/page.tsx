@@ -22,7 +22,7 @@ const VALUES = [
 const PROTOCOL_RULES = [
   "n−1 contributors pay each round; the scheduled recipient does not pay that round.",
   "Payout order is shuffled on-chain when the last member joins.",
-  "Pot size matches active contributors - defaults do not inflate the payout.",
+  "Pot size matches active contributors, defaults do not inflate the payout.",
   "Min trust score applies to the creator and all joiners.",
   "Trust +10 after a clean completion; −25 immediately on slash.",
 ];
@@ -100,7 +100,7 @@ export default function AboutPage() {
           </li>
           <li className="flex gap-3">
             <span className="font-mono text-xs text-muted">2</span>
-            <span>Invite members via link - circle starts automatically when full</span>
+            <span>Invite members via link, circle starts automatically when full</span>
           </li>
           <li className="flex gap-3">
             <span className="font-mono text-xs text-muted">3</span>

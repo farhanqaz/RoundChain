@@ -20,14 +20,14 @@ describe("parseContractError", () => {
 
   it("detects simulation failures", () => {
     expect(parseContractError("Simulation failed: contract reverted")).toBe(
-      "Simulation failed - check USDC trustline and balance"
+      "Simulation failed, check USDC trustline and balance"
     );
   });
 
   it("truncates very long unknown errors", () => {
     const long = "x".repeat(250);
     expect(parseContractError(long)).toBe(
-      "Transaction failed - check Freighter and try again"
+      "Transaction failed, check Freighter and try again"
     );
   });
 });

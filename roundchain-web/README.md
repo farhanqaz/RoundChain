@@ -1,13 +1,10 @@
-# RoundChain - Web Client
+# RoundChain, Web Client
 
 Production-facing interface for the RoundChain ROSCA protocol. Connects to Soroban via RPC, signs transactions through Freighter, and surfaces circle state, member actions, and on-chain trust scores.
 
 ## Requirements
 
-- Node.js 18+
-- Freighter browser extension (testnet)
-- Deployed contract ID (see `.env.local.example`)
-
+- Node.js 18+- Freighter browser extension (testnet)- Deployed contract ID (see `.env.local.example`)
 ## Configuration
 
 ```bash
@@ -54,18 +51,10 @@ Circles auto-start when the last member joins. Invite link is hidden when the ci
 
 ## UX Highlights
 
-- **Recipient turn** - no Pay button; shows “waiting for contributors”
-- **Pot display** - net amount after on-chain fee (`get_fee_config`)
-- **Flow visualization** - round progress, contributor status, payout order
-- **Trust badge** - live score in header when wallet connected
-
+- **Recipient turn**, no Pay button; shows “waiting for contributors”- **Pot display**, net amount after on-chain fee (`get_fee_config`)- **Flow visualization**, round progress, contributor status, payout order- **Trust badge**, live score in header when wallet connected
 ## Wallet Setup (Testnet)
 
-1. Enable testnet in Freighter
-2. Fund the account with XLM (friendbot)
-3. Add trustline to Circle USDC issuer
-4. Obtain test USDC from [faucet.circle.com](https://faucet.circle.com/)
-
+1. Enable testnet in Freighter2. Fund the account with XLM (friendbot)3. Add trustline to Circle USDC issuer4. Obtain test USDC from [faucet.circle.com](https://faucet.circle.com/)
 ## Project Layout
 
 ```

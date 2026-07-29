@@ -15,7 +15,7 @@ import {
 } from "./contract";
 
 export const MAX_CIRCLE_MEMBERS = 50;
-export const MIN_PERIOD_SECONDS = 86400; // 1 day - UI minimum for regular create
+export const MIN_PERIOD_SECONDS = 86400; // 1 day, UI minimum for regular create
 
 export type CreateCircleInput = {
   creator: string;
@@ -100,7 +100,7 @@ export async function executeCreateCircle(
   return { hash, circleId };
 }
 
-/** Sandbox preset - same contract path as create, shorter period for quick testing. */
+/** Sandbox preset, same contract path as create, shorter period for quick testing. */
 export function demoCircleParams(creator: string): CreateCircleInput {
   return {
     creator,

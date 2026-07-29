@@ -52,7 +52,7 @@ export default function CirclesPage() {
         <EmptyState
           icon={<IconUsers className="h-7 w-7" />}
           title="No circles yet"
-          description="Create the first circle - you're enrolled automatically - then invite others with a share link."
+          description="Create the first circle, you're enrolled automatically, then invite others with a share link."
           action={{ label: "Create circle", href: "/create" }}
           secondary={{ label: "Try the sandbox", href: "/demo" }}
         />

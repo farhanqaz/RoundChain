@@ -240,7 +240,7 @@ export function CircleActions(props: Props) {
         )}
 
         {isExitedClean && (
-          <Alert variant="info">You exited cleanly - remaining rounds were prepaid.</Alert>
+          <Alert variant="info">You exited cleanly, remaining rounds were prepaid.</Alert>
         )}
 
         {joinClosed && status === "Pending" && (
@@ -263,12 +263,12 @@ export function CircleActions(props: Props) {
 
         {trustBlocked && wantsJoin && (
           <Alert variant="warning" title={`Trust score ${trustRequired}+ required`}>
-            Your score: {userTrustScore ?? 0} - complete circles for +10 each.
+            Your score: {userTrustScore ?? 0}, complete circles for +10 each.
           </Alert>
         )}
 
         {status === "Cancelled" && (
-          <Alert variant="warning">Circle cancelled - collateral refunded to members.</Alert>
+          <Alert variant="warning">Circle cancelled, collateral refunded to members.</Alert>
         )}
 
         {primaryAction === "join" && (
@@ -301,7 +301,7 @@ export function CircleActions(props: Props) {
               </p>
               <p className="mt-1 text-sm text-muted">
                 {isMyTurn
-                  ? `All members paid - release the pot to your wallet (${formatFeePercent(feeBps)} platform fee deducted)`
+                  ? `All members paid, release the pot to your wallet (${formatFeePercent(feeBps)} platform fee deducted)`
                   : `Waiting on payout to ${recipient ? shortenAddress(recipient, 6) : "recipient"}`}
               </p>
             </div>
@@ -342,12 +342,12 @@ export function CircleActions(props: Props) {
           <p className="text-sm text-muted">
             {everyonePaid ? (
               <>
-                Round {displayRound} · all members paid - release opens when the period ends
+                Round {displayRound} · all members paid, release opens when the period ends
                 {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
               </>
             ) : (
               <>
-                Round {displayRound} payout - waiting for others to pay this round.
+                Round {displayRound} payout, waiting for others to pay this round.
                 {!periodEnded && ` · ${timeRemaining(nextPayoutTime)}`}
               </>
             )}
@@ -365,7 +365,7 @@ export function CircleActions(props: Props) {
         {status === "Pending" && isMember && !isFull && (
           <p className="text-sm text-muted">
             Waiting for {maxMembers - memberCount} more member
-            {maxMembers - memberCount !== 1 ? "s" : ""} - starts automatically when full.
+            {maxMembers - memberCount !== 1 ? "s" : ""}, starts automatically when full.
           </p>
         )}
 

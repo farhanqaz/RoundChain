@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (elapsed < COOLDOWN_MS) {
     return NextResponse.json(
       {
-        error: "Rate limit - try again later",
+        error: "Rate limit, try again later",
         retryAfterSec: Math.ceil((COOLDOWN_MS - elapsed) / 1000),
       },
       { status: 429 }

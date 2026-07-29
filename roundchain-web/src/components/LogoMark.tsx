@@ -8,7 +8,7 @@ interface Props {
   animate?: boolean;
 }
 
-/** RoundChain mark - center dot + dashed ring (matches brand logo). */
+/** RoundChain mark, center dot + dashed ring (matches brand logo). */
 export function LogoMark({ size = LOGO_SIZE.display, className = "", animate = false }: Props) {
   return (
     <svg

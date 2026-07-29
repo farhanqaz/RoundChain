@@ -10,13 +10,13 @@ const STEPS = [
   {
     n: "01",
     title: "Create a circle",
-    desc: "Set members, contribution, and round length - you're enrolled and deposit collateral on create.",
+    desc: "Set members, contribution, and round length, you're enrolled and deposit collateral on create.",
     Illustration: CreateCircleIllus,
   },
   {
     n: "02",
     title: "Invite members",
-    desc: "Share a link - others join and deposit collateral. The circle starts automatically when full.",
+    desc: "Share a link, others join and deposit collateral. The circle starts automatically when full.",
     Illustration: InviteMembersIllus,
   },
   {
@@ -33,7 +33,7 @@ export function HowItWorksSection() {
       id="how-it-works"
       label="How it works"
       title="From setup to payout"
-      description="Three on-chain steps - no treasurer, no group-chat drama."
+      description="Three on-chain steps, no treasurer, no group-chat drama."
     >
       <div className="how-steps-wrap">
         <div className="how-steps-flow" aria-hidden>

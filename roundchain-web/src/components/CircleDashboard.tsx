@@ -93,7 +93,7 @@ export function CircleDashboard({ circle, members, circleId }: Props) {
 
       {joinClosed && joinIncomplete && (
         <Alert variant="warning" title="Join window closed">
-          This circle did not fill in time. Anyone can cancel to refund deposited collateral - funds
+          This circle did not fill in time. Anyone can cancel to refund deposited collateral, funds
           are not lost.
         </Alert>
       )}
