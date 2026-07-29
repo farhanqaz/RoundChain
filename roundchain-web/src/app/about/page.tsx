@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
+import { ExternalDocCard } from "@/components/ExternalDocCard";
+import { PageShell } from "@/components/PageShell";
 import { PlatformFeeNote } from "@/components/PlatformFeeNote";
 import { IconLock, IconList, IconShield } from "@/components/icons";
 import {
@@ -11,6 +13,7 @@ import {
   SOROBAN_RPC,
   USDC_TOKEN,
 } from "@/lib/constants";
+import { PRODUCT_GUIDE_PDF_URL, PRODUCT_GUIDE_URL } from "@/lib/external-links";
 import { server } from "@/lib/contract";
 
 const VALUES = [
@@ -36,7 +39,7 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-12">
+    <PageShell className="mx-auto max-w-2xl space-y-12 pb-12">
       <div>
         <p className="section-label">About</p>
         <h1 className="mt-2 text-3xl font-medium text-foreground">RoundChain</h1>
@@ -47,6 +50,34 @@ export default function AboutPage() {
           <PlatformFeeNote suffix=" platform fee" /> applies on each payout release (read from the
           contract). Complete circles to build an on-chain trust score.
         </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/guide" className="btn-primary text-sm">
+            Read the guide
+          </Link>
+          <a
+            href={PRODUCT_GUIDE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary text-sm"
+          >
+            Open full docs
+          </a>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ExternalDocCard
+          href={PRODUCT_GUIDE_URL}
+          title="Product guide (Google Docs)"
+          description="Plain-language walkthrough for new users."
+          buttonLabel="Open guide"
+        />
+        <ExternalDocCard
+          href={PRODUCT_GUIDE_PDF_URL}
+          title="Product guide (PDF)"
+          description="Download or share the same guide offline."
+          buttonLabel="Open PDF"
+        />
       </div>
 
       <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-3">
@@ -155,6 +186,6 @@ export default function AboutPage() {
           </div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }
