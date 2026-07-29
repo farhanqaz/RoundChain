@@ -55,7 +55,7 @@ export default function AboutPage() {
           rel="noopener noreferrer"
           className="btn-primary mt-6 text-sm"
         >
-          Docs
+          PDF
         </a>
       </div>
 

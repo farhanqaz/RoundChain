@@ -1,6 +1,6 @@
-/** Google Docs product guide (view link, not edit). */
+/** Product guide PDF (Adobe Acrobat share link). */
 export const DEFAULT_PRODUCT_GUIDE_URL =
-  "https://docs.google.com/document/d/11jIQBBCZt_G8uq_7wi7Js3FTr1SCJUidJ7oKYsohw1Q/view?usp=sharing";
+  "https://acrobat.adobe.com/id/urn:aaid:sc:AP:3bd8997c-ab41-432f-8304-46b78443e7ab";
 
 export const PRODUCT_GUIDE_URL =
   process.env.NEXT_PUBLIC_PRODUCT_GUIDE_URL?.trim() || DEFAULT_PRODUCT_GUIDE_URL;
