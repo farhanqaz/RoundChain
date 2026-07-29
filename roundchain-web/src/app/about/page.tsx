@@ -53,9 +53,9 @@ export default function AboutPage() {
           href={PRODUCT_GUIDE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-primary mt-6 inline-block text-sm"
+          className="btn-primary mt-6 text-sm"
         >
-          Product guide
+          Docs
         </a>
       </div>
 
